@@ -1,9 +1,10 @@
 # PRD — RRI PRO 1 Banda Aceh Thumbnail Generator
 
-> **Document version:** 1.0
+> **Document version:** 1.1 (Supabase)
 > **Last updated:** 2026-05-04
-> **Status:** Ready for implementation
-> **Target executor:** Claude Code
+> **Status:** Ready for implementation (Step 1 complete, Step 2+ pending user setup)
+> **Target executor:** Claude Code (agent-friendly, step-by-step)
+> **Backend:** Supabase (Postgres + Auth + Storage)
 
 ---
 
@@ -14,16 +15,18 @@ Aplikasi web untuk membuat thumbnail YouTube dialog program **RRI PRO 1 Banda Ac
 **Target user:** Tim produksi RRI Banda Aceh (1–3 admin internal).
 **Skala data:** ~2–10 presenter, 100–500 pembicara, ~50 thumbnail/bulan.
 
+---
+
 ## 2. Goals & Non-Goals
 
 ### Goals
 - Generate thumbnail YouTube konsisten dengan branding RRI PRO 1 dalam < 1 menit per thumbnail.
 - Database pembicara reusable dengan search.
 - Setting fleksibel untuk logo dan background presenter (tidak hardcoded).
-- Tanpa kompleksitas auth multi-user.
+- Auth real dengan 1-3 akun admin (tidak perlu multi-user complexity).
 
 ### Non-Goals (v1)
-- ❌ Multi-user / role management.
+- ❌ Multi-user / role management (RLS sama untuk semua auth user).
 - ❌ Editor visual drag-and-drop posisi.
 - ❌ Upload custom font.
 - ❌ Riwayat thumbnail (history page).
@@ -31,14 +34,18 @@ Aplikasi web untuk membuat thumbnail YouTube dialog program **RRI PRO 1 Banda Ac
 - ❌ Mobile app native.
 - ❌ Internationalization (UI fixed dalam bahasa Indonesia).
 
+---
+
 ## 3. Tech Stack
 
 | Layer | Tech | Catatan |
 |-------|------|---------|
-| **Framework** | Next.js 14 (App Router) | TypeScript |
-| **Styling** | Tailwind CSS | + tailwindcss-line-clamp |
+| **Framework** | Next.js 14 (App Router) | TypeScript, SSR-ready |
+| **Styling** | Tailwind CSS | + custom tokens (CSS vars) |
 | **Icons** | lucide-react | |
-| **Backend** | Firebase 10+ | Firestore + Storage (no Auth) |
+| **Database** | Supabase Postgres | Tables + RLS policies |
+| **Auth** | Supabase Auth | Email + password (1-3 admins) |
+| **Storage** | Supabase Storage | S3-compatible, public read + auth write |
 | **State** | React `useState` + Context | Tidak perlu Redux/Zustand |
 | **Forms** | Native React state | Tidak perlu react-hook-form untuk skala ini |
 | **Render thumbnail** | SVG inline | Convert ke PNG via `<canvas>` |
@@ -50,33 +57,39 @@ Aplikasi web untuk membuat thumbnail YouTube dialog program **RRI PRO 1 Banda Ac
 {
   "next": "^14.2.0",
   "react": "^18.3.0",
-  "firebase": "^10.13.0",
+  "@supabase/supabase-js": "^2.45.0",
+  "@supabase/ssr": "^0.2.0",
   "lucide-react": "^0.400.0",
   "tailwindcss": "^3.4.0"
 }
 ```
+
+---
 
 ## 4. Project Structure
 
 ```
 rri-thumbnail-generator/
 ├── app/
-│   ├── layout.tsx              # Root layout + font loader
-│   ├── page.tsx                # Landing → redirect ke /app
+│   ├── layout.tsx              # Root layout + font loader + AuthProvider (TODO)
+│   ├── page.tsx                # Landing → redirect ke /generator
 │   ├── globals.css             # Tailwind + CSS variables
-│   ├── (protected)/
-│   │   ├── layout.tsx          # Password gate + Top Nav
+│   ├── (protected)/            # Route group, auth check via middleware
+│   │   ├── layout.tsx          # Top Nav + session check
 │   │   ├── generator/
-│   │   │   └── page.tsx        # Halaman utama
+│   │   │   └── page.tsx        # Halaman utama (form + preview + download)
 │   │   ├── speakers/
-│   │   │   └── page.tsx        # Database pembicara
+│   │   │   └── page.tsx        # Database pembicara (CRUD + search)
 │   │   └── settings/
-│   │       └── page.tsx        # Setting logo/presenter/password
-│   └── login/
-│       └── page.tsx            # (Opsional, atau pakai modal)
+│   │       └── page.tsx        # Logo + presenter settings (no password section)
+│   ├── login/
+│   │   └── page.tsx            # Supabase Auth login form (email + password)
+│   └── auth/                   # Auth callback routes (if using OAuth)
+│       └── callback/
+│           └── route.ts        # (Optional, for future OAuth)
 ├── components/
 │   ├── auth/
-│   │   └── PasswordGate.tsx
+│   │   └── LoginForm.tsx       # Supabase Auth form (replaces PasswordGate)
 │   ├── thumbnail/
 │   │   ├── ThumbnailPreview.tsx      # SVG renderer
 │   │   ├── SpeakerSelect.tsx         # Searchable combobox
@@ -89,75 +102,106 @@ rri-thumbnail-generator/
 │   │   ├── LogoUpload.tsx
 │   │   ├── PresenterCard.tsx
 │   │   └── PresenterForm.tsx
-│   └── ui/                            # Reusable
+│   └── ui/                     # Reusable
 │       ├── Modal.tsx
 │       ├── Input.tsx
 │       ├── Button.tsx
 │       └── Spinner.tsx
 ├── lib/
-│   ├── firebase.ts                    # Firebase init
-│   ├── firestore/
-│   │   ├── speakers.ts                # CRUD pembicara
-│   │   ├── presenters.ts              # CRUD presenter
-│   │   └── settings.ts                # Logo + password
+│   ├── supabase/               # Supabase client setup
+│   │   ├── client.ts           # Browser client
+│   │   ├── server.ts           # Server client (for seed + SSR)
+│   │   └── middleware.ts       # Session refresh (TODO)
 │   ├── storage/
-│   │   └── upload.ts                  # Upload helpers
-│   ├── auth/
-│   │   └── session.ts                 # sessionStorage password gate
-│   └── utils/
-│       ├── svgToPng.ts                # Export logic
-│       └── slugify.ts
+│   │   └── upload.ts           # Upload + resize helpers (Supabase Storage)
+│   ├── utils/
+│   │   ├── svgToPng.ts         # SVG → PNG export via canvas
+│   │   └── slugify.ts
+│   └── auth/                   # Auth session helpers (TODO)
 ├── types/
+│   ├── database.ts             # Postgres tables (generated via CLI)
 │   ├── speaker.ts
 │   ├── presenter.ts
 │   └── settings.ts
+├── middleware.ts               # Auth middleware for session refresh (TODO)
+├── lib/                        # Shared utilities
+├── scripts/
+│   └── seed.ts                 # Insert default presenters (runs once)
+├── supabase/                   # Supabase config
+│   ├── migrations/
+│   │   └── 0001_init.sql       # Create tables, RLS policies, storage policies
+│   └── seed.sql                # Seed data (presenters Dimas, Ammar)
+├── docs/
+│   └── references/
+│       ├── mockup.jsx          # UI reference (single-file React)
+│       ├── bg-dimas.png        # Presenter background (Dimas)
+│       ├── bg-ammar.png        # Presenter background (Ammar)
+│       └── original-thumbnail.png # Example output
 ├── public/
 ├── .env.local.example
-├── firebase.json                      # Storage CORS + Hosting config
-├── firestore.rules
-├── storage.rules
-├── next.config.js
 ├── tailwind.config.ts
 ├── tsconfig.json
-└── README.md
+├── package.json
+├── CLAUDE.md                   # Agent handoff doc
+└── README.md                   # User-facing docs
 ```
+
+---
 
 ## 5. Pages & Routes
 
-| Route | Purpose | Access |
-|-------|---------|--------|
-| `/` | Redirect ke `/generator` | Public |
-| `/login` | (Optional) password input | Public |
-| `/generator` | Halaman utama: form + preview + download | Password-gated |
-| `/speakers` | CRUD database pembicara dengan search | Password-gated |
-| `/settings` | Logo, presenter, ubah password | Password-gated |
+| Route | Purpose | Auth | Access |
+|-------|---------|------|--------|
+| `/` | Redirect ke `/generator` | — | Public |
+| `/login` | Supabase Auth login (email + password) | No | Public |
+| `/generator` | Halaman utama: form + preview + download | Yes (RLS read) | Protected |
+| `/speakers` | CRUD database pembicara dengan search | Yes | Protected |
+| `/settings` | Logo, presenter, akun admin info | Yes | Protected |
 
-**Password Gate Implementation:**
-- Cek `sessionStorage.getItem('rri_admin_authed') === 'true'` di `(protected)/layout.tsx`.
-- Kalau false → render `<PasswordGate />` (full-screen modal/page).
-- Kalau benar → set sessionStorage dan render children.
-- Password disimpan di Firestore `settings/auth` field `passwordHash` (SHA-256, bukan plaintext).
-- Validasi: hash input di client, compare dengan field dari Firestore.
+**Auth Implementation:**
+- `app/(protected)/layout.tsx` checks Supabase session (via middleware + cookie)
+- If not authenticated → server redirect to `/login`
+- If authenticated → render children (form, speakers, settings)
+- Logout: `supabase.auth.signOut()` + redirect to `/login`
+- Session persisted via HTTP-only cookie (handled by `@supabase/ssr`)
+
+---
 
 ## 6. Features (Detailed)
 
-### 6.1 Authentication (Password Gate)
-- Halaman login penuh dengan card di tengah.
-- Background gradient biru navy + green glow + dekoratif triangle (matching brand).
-- Logo PRO 1 + judul "Thumbnail Generator".
-- Input password (toggle show/hide).
-- Tombol "Masuk".
-- Default password: `admin123` (di-seed pertama kali jalan).
-- Error message kalau salah: "Password salah. Coba lagi."
-- Setelah berhasil → sessionStorage flag → redirect ke `/generator`.
-- **Logout button** di top nav: clear sessionStorage → redirect ke login.
+### 6.1 Authentication (Supabase Auth)
+
+**Real auth** menggunakan Supabase Auth:
+- Email + password login (no social auth v1)
+- Admin accounts dibuat manual via Supabase dashboard
+- Password reset via "Forgot Password" link (auto email dari Supabase)
+- Session managed via `@supabase/ssr` (HTTP-only cookies, SSR-safe)
+- Logout: clear session cookie, redirect to `/login`
+
+**Login page:**
+- Background gradient biru navy + green glow (matching brand)
+- Card di tengah: logo + judul "Thumbnail Generator" + subtitle
+- Input email, input password (toggle show/hide)
+- Tombol "Masuk"
+- Error message: "Email atau password salah"
+- Link "Forgot password?" → Supabase magic link email
+
+**Post-login:**
+- Redirect ke `/generator`
+- Session expires saat browser ditutup (atau after 24h, configurable di Supabase)
+
+**Creating admin accounts (user responsibility):**
+1. Buka Supabase dashboard → Authentication
+2. Click "Invite" → enter email admin
+3. Admin terima email magic link → set password
+4. Next login dengan email + password tersebut
 
 ### 6.2 Generator Page (`/generator`)
 
 **Layout:** 2 kolom desktop (5-col grid: form 2-col, preview 3-col), stack di mobile.
 
 **Form (kolom kiri):**
-1. **Section "Presenter"** — card pickers berisi semua presenter dari Firestore. Click → set selected. Visual: mini-thumbnail 16:9 (background presenter) + nama.
+1. **Section "Presenter"** — card pickers berisi semua presenter dari Supabase. Click → set selected. Visual: mini-thumbnail 16:9 (background presenter) + nama.
 2. **Section "Konten Thumbnail"**:
    - Textarea: Judul Program (max 2 baris)
    - Input: Nama Acara (default `BANDA ACEH MENYAPA`)
@@ -165,7 +209,7 @@ rri-thumbnail-generator/
    - Input: Jam Siaran (free text, contoh: `09:00 – 10:00 WIB`)
 3. **Section "Pembicara"**:
    - Toggle 1/2/3/4 untuk jumlah pembicara.
-   - Untuk tiap slot: `<SpeakerSelect>` (searchable combobox, lihat 6.5).
+   - Untuk tiap slot: `<SpeakerSelect>` (searchable combobox).
 4. **Tombol "Download PNG (1280×720)"** — gradient orange, full-width.
 
 **Preview (kolom kanan):**
@@ -173,7 +217,7 @@ rri-thumbnail-generator/
 - Render `<ThumbnailPreview>` dengan `viewBox="0 0 1280 720"` di-scale ke container.
 - Update **real-time** setiap field berubah.
 - Border-radius + shadow untuk efek "card preview".
-- Subtitle: "1280 × 720" + "Preview akan otomatis update saat Anda mengubah form."
+- Subtitle: "1280 × 720 px" + "Preview update otomatis saat form berubah."
 
 ### 6.3 Speakers Page (`/speakers`)
 
@@ -206,7 +250,7 @@ rri-thumbnail-generator/
 
 **Hapus:**
 - Confirm dialog: "Hapus pembicara ini?"
-- Setelah confirm: hapus dari Firestore + hapus foto dari Storage (kalau ada).
+- Setelah confirm: hapus dari Supabase + hapus foto dari Storage (kalau ada).
 
 ### 6.4 Settings Page (`/settings`)
 
@@ -219,18 +263,19 @@ rri-thumbnail-generator/
 
 **B. Presenter**
 - Header section + tombol "+ Tambah".
-- Helper text: "Tiap presenter punya background sendiri (sudah include foto presenter, label nama, glow, & triangle)."
+- Helper text: "Tiap presenter punya background sendiri (include foto, label, glow, triangle)."
 - Grid card: mini-thumbnail landscape 80x48 + nama + tombol Edit/Hapus.
 - **Modal Add/Edit:**
   - Nama Presenter (input)
   - Background Thumbnail 1280×720 (upload) — preview aspect-video
-  - Helper text: "Background sudah include foto presenter, label nama, glow, & triangle. Rekomendasi 1280×720 PNG/JPG."
+  - Helper text: "Background include foto presenter, label, glow, triangle. Rekomendasi 1280×720 PNG/JPG."
   - Validasi: Nama wajib.
 
-**C. Password Admin**
-- Input password baru + tombol "Ubah".
-- Validasi: minimal 4 karakter.
-- Success message dengan check icon: "Password berhasil diubah ✓" (auto-hide 3 detik).
+**C. Akun Admin**
+- Informasi: "Kelola akun admin via Supabase dashboard"
+- Helper text: "Untuk tambah/hapus user admin atau ubah password, buka dashboard Supabase"
+- Tombol: "Buka Supabase Dashboard" (link eksternal ke supabase project)
+- Note: Password ubah via "Account" atau "Reset Password" di dashboard
 
 ### 6.5 SpeakerSelect Component (Searchable Combobox)
 
@@ -264,7 +309,7 @@ export async function exportSvgAsPng(
   const url = URL.createObjectURL(blob);
 
   const img = new Image();
-  img.crossOrigin = 'anonymous'; // Penting untuk Firebase Storage URL
+  img.crossOrigin = 'anonymous'; // Penting untuk Supabase Storage URLs
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve();
     img.onerror = reject;
@@ -292,169 +337,122 @@ export async function exportSvgAsPng(
 ```
 
 **Catatan CORS:**
-Karena `<image href>` di SVG mengambil dari Firebase Storage URL (eksternal), Storage CORS HARUS dikonfigurasi (lihat section 9). Tanpa ini, canvas akan tainted dan `toBlob()` gagal.
+Supabase Storage URLs support CORS natively (GET requests untuk public objects). Tidak perlu setup CORS manual seperti Firebase — works out-of-the-box.
 
-## 7. Data Model (Firestore)
+---
 
-### Collection: `speakers`
-```ts
-type Speaker = {
-  id: string;              // auto-generated
-  fullName: string;        // "Dr. Yusran Asnawi, S.Pd. M.Pd."
-  position: string;        // "Wakil Dekan ... UIN Ar-Raniry Banda Aceh"
-  photoUrl: string | null; // Firebase Storage download URL
-  photoPath?: string;      // Storage path untuk delete (e.g. "speakers/abc123.jpg")
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-};
+## 7. Data Model (Supabase Postgres)
+
+### Table: `speakers`
+```sql
+id: uuid (primary)
+full_name: text (not null) — "Dr. Yusran Asnawi, S.Pd. M.Pd."
+position: text — "Wakil Dekan ... UIN Ar-Raniry"
+photo_url: text | null — Supabase Storage download URL
+photo_path: text | null — "speakers/abc123.jpg" (for delete)
+created_at: timestamptz
+updated_at: timestamptz
 ```
 
-### Collection: `presenters`
-```ts
-type Presenter = {
-  id: string;
-  name: string;                    // "Dimas"
-  backgroundUrl: string | null;    // Storage download URL untuk background full
-  backgroundPath?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-};
+### Table: `presenters`
+```sql
+id: uuid (primary)
+name: text (not null) — "Dimas", "Ammar"
+background_url: text | null — Storage URL untuk background full 1280×720
+background_path: text | null — "presenters/dimas-1234.jpg"
+created_at: timestamptz
+updated_at: timestamptz
 ```
 
-### Document: `settings/branding`
-```ts
-type BrandingSettings = {
-  rriLogoUrl: string | null;
-  rriLogoPath?: string;
-  pro1LogoUrl: string | null;
-  pro1LogoPath?: string;
-  updatedAt: Timestamp;
-};
+### Table: `branding_settings` (singleton)
+```sql
+id: uuid (primary) — always one row: '00000000-0000-0000-0000-000000000001'
+rri_logo_url: text | null
+rri_logo_path: text | null
+pro1_logo_url: text | null
+pro1_logo_path: text | null
+updated_at: timestamptz
 ```
 
-### Document: `settings/auth`
-```ts
-type AuthSettings = {
-  passwordHash: string;    // SHA-256 hex of password
-  updatedAt: Timestamp;
-};
+**TypeScript types** generated via:
+```bash
+supabase gen types typescript --local > types/database.ts
 ```
 
-### Seed Data (jalankan saat pertama deploy)
-```
-settings/auth: { passwordHash: SHA256("admin123") }
-settings/branding: { rriLogoUrl: null, pro1LogoUrl: null }
-presenters/[auto]: { name: "Dimas", backgroundUrl: null }
-presenters/[auto]: { name: "Ammar", backgroundUrl: null }
+### Seed data (jalankan saat pertama):
+```sql
+-- presenters
+INSERT INTO presenters (name, background_url, created_at, updated_at) VALUES
+  ('Dimas', null, now(), now()),
+  ('Ammar', null, now(), now());
+
+-- branding_settings (singleton)
+INSERT INTO branding_settings (id, rri_logo_url, pro1_logo_url, updated_at) VALUES
+  ('00000000-0000-0000-0000-000000000001', null, null, now());
 ```
 
-## 8. Storage Structure (Firebase Storage)
+---
+
+## 8. Storage Structure (Supabase Storage)
 
 ```
-gs://[BUCKET]/
+buckets:
 ├── logos/
 │   ├── rri-banda-aceh-{timestamp}.png
 │   └── pro1-977fm-{timestamp}.png
 ├── presenters/
-│   └── {presenterId}-{timestamp}.png
+│   ├── dimas-{timestamp}.png
+│   └── ammar-{timestamp}.png
 └── speakers/
-    └── {speakerId}-{timestamp}.jpg
+    ├── {speakerId}-{timestamp}.jpg
+    └── ...
 ```
 
 **Konvensi:**
-- Nama file include timestamp untuk hindari cache lama.
-- Saat replace foto: upload baru → update Firestore URL → delete file lama.
-- Compress image client-side ke max 1280px (untuk presenter background) atau 400px (untuk foto pembicara) sebelum upload.
+- Nama file include timestamp untuk hindari cache lama
+- Saat replace foto: upload baru → update Supabase row → delete file lama
+- Compress image client-side ke max 1280px (presenter background) atau 400px (foto pembicara) sebelum upload
+- Public URLs format: `https://<project>.supabase.co/storage/v1/object/public/{bucket}/{path}`
 
-## 9. Security Rules
+---
 
-### `firestore.rules`
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
+## 9. Security (RLS Policies + Storage Policies)
 
-    // Speakers — read public, write only valid shape
-    match /speakers/{id} {
-      allow read: if true;
-      allow create: if isValidSpeaker(request.resource.data);
-      allow update: if isValidSpeaker(request.resource.data);
-      allow delete: if true;
-    }
+**Database RLS:**
+```sql
+-- Speakers: public read (anon + auth), auth-only write
+CREATE POLICY "speakers_read" ON speakers FOR SELECT USING (true);
+CREATE POLICY "speakers_write" ON speakers FOR INSERT, UPDATE, DELETE 
+  TO authenticated USING (auth.uid() IS NOT NULL);
 
-    // Presenters
-    match /presenters/{id} {
-      allow read: if true;
-      allow create: if isValidPresenter(request.resource.data);
-      allow update: if isValidPresenter(request.resource.data);
-      allow delete: if true;
-    }
+-- Presenters: same
+CREATE POLICY "presenters_read" ON presenters FOR SELECT USING (true);
+CREATE POLICY "presenters_write" ON presenters FOR INSERT, UPDATE, DELETE 
+  TO authenticated USING (auth.uid() IS NOT NULL);
 
-    // Settings
-    match /settings/{doc} {
-      allow read: if true;
-      allow write: if true; // Validasi tambahan via Storage rules + UI
-    }
-
-    function isValidSpeaker(data) {
-      return data.keys().hasAll(['fullName', 'position'])
-        && data.fullName is string && data.fullName.size() > 0 && data.fullName.size() < 200
-        && data.position is string && data.position.size() < 500;
-    }
-
-    function isValidPresenter(data) {
-      return data.keys().hasAll(['name'])
-        && data.name is string && data.name.size() > 0 && data.name.size() < 100;
-    }
-  }
-}
+-- Branding Settings: same
+CREATE POLICY "branding_read" ON branding_settings FOR SELECT USING (true);
+CREATE POLICY "branding_write" ON branding_settings FOR UPDATE 
+  TO authenticated USING (auth.uid() IS NOT NULL);
 ```
 
-### `storage.rules`
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /logos/{file} {
-      allow read: if true;
-      allow write: if request.resource.size < 1 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-    }
-    match /presenters/{file} {
-      allow read: if true;
-      allow write: if request.resource.size < 3 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-    }
-    match /speakers/{file} {
-      allow read: if true;
-      allow write: if request.resource.size < 1 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-    }
-  }
-}
+**Storage Policies:**
+```sql
+-- Logos: public read, auth write
+CREATE POLICY "logos_read" ON storage.objects FOR SELECT USING (bucket_id = 'logos');
+CREATE POLICY "logos_write" ON storage.objects FOR INSERT, UPDATE, DELETE TO authenticated 
+  USING (bucket_id = 'logos' AND auth.uid() IS NOT NULL);
+
+-- Same for 'presenters' and 'speakers' buckets
 ```
 
-### Storage CORS (`cors.json`)
-```json
-[
-  {
-    "origin": ["*"],
-    "method": ["GET"],
-    "maxAgeSeconds": 3600,
-    "responseHeader": ["Content-Type", "Cache-Control"]
-  }
-]
-```
-Apply via gcloud CLI:
-```bash
-gsutil cors set cors.json gs://[BUCKET]
-```
+**Auth Security:**
+- Only 1-3 admin email accounts via Supabase Auth
+- RLS requires `auth.uid() IS NOT NULL` for all writes
+- No public write access (anon reads only)
+- Service role key only on server (seed script, not exposed)
 
-> ⚠️ **Catatan keamanan:** Karena tidak ada Auth, password gate di client adalah **soft protection** saja — siapa pun yang langsung hit Firestore via SDK bisa write. Mitigasi:
-> 1. Validasi shape data via Firestore rules (sudah di atas).
-> 2. Limit ukuran file di Storage rules.
-> 3. Set Firebase **App Check** (opsional, recommended) untuk hanya allow request dari domain Vercel kita.
-> 4. Monitor usage di Firebase Console.
+---
 
 ## 10. UI/UX Specifications
 
@@ -506,7 +504,7 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-displ
 - Max-width 7xl, padding x-6 py-6.
 
 **Footer:**
-- Border-top, text-xs muted, center: status indicator (titik amber + "Connected to Firebase").
+- Border-top, text-xs muted, center: status indicator (titik amber + "Connected to Supabase").
 
 ### 10.3 Component Style Patterns
 
@@ -516,6 +514,8 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-displ
 **Input:** `border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none`
 **Modal overlay:** `fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4`
 **Modal panel:** `bg-white rounded-xl w-full max-w-md p-6`
+
+---
 
 ## 11. Thumbnail Layout Specs (1280×720)
 
@@ -563,113 +563,100 @@ const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-displ
 - Jabatan: foreignObject di bawah nama, width 190 (atau 150 jika count=4), Inter 500, fontSize 11 (atau 10), uppercase, line-height 1.3, max ~3 baris.
 
 ### Reference Images
-Lihat file referensi di `/docs/references/`:
+Lihat file referensi di `docs/references/`:
 - `original-thumbnail.png` — contoh thumbnail jadi (3 pembicara + Dimas)
-- `bg-dimas.png` — background Dimas (kosongan)
-- `bg-ammar.png` — background Ammar (kosongan)
+- `bg-dimas.png` — background Dimas (dengan foto, label, glow, triangle)
+- `bg-ammar.png` — background Ammar (dengan foto, label, glow, triangle)
+
+---
 
 ## 12. Environment Variables
 
 `.env.local`:
 ```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
+# Supabase (from Project Settings → API Keys)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+
+# Server-only (for seed script, never expose to frontend)
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 ```
 
-> Semua `NEXT_PUBLIC_*` akan terekspos ke client. Itu **normal** untuk Firebase web SDK — keamanan via Security Rules.
+> Semua `NEXT_PUBLIC_*` akan terekspos ke client. Itu **normal** untuk Supabase web SDK — keamanan via RLS policies.
 
-## 13. Firebase Setup Steps
+---
 
-1. Buka [Firebase Console](https://console.firebase.google.com/) → Create Project (nama: `rri-thumbnail-generator`).
-2. Skip Google Analytics.
-3. **Add web app** → daftar app name, copy config snippet.
-4. **Build → Firestore Database**:
-   - Create database → Production mode → region `asia-southeast1` (Singapore, terdekat dari Aceh).
-   - Tab "Rules" → paste isi `firestore.rules`.
-5. **Build → Storage**:
-   - Get started → region sama → Production mode.
-   - Tab "Rules" → paste isi `storage.rules`.
-6. **Setup CORS Storage** (via Cloud Shell atau gcloud CLI):
-   ```bash
-   echo '[{"origin":["*"],"method":["GET"],"maxAgeSeconds":3600,"responseHeader":["Content-Type","Cache-Control"]}]' > cors.json
-   gsutil cors set cors.json gs://[YOUR-BUCKET]
-   ```
-7. (Optional) **App Check**: Build → App Check → Register app → reCAPTCHA v3.
-8. Copy semua env values ke `.env.local`.
-9. Run seed script (one-time) untuk insert default data.
+## 13. Supabase Setup Steps
 
-### Seed Script (`scripts/seed.ts`)
-Script Node.js standalone yang dijalankan sekali untuk insert default password + 2 presenter:
-```ts
-// Run: npx tsx scripts/seed.ts
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
-import { createHash } from 'crypto';
+1. Buka [supabase.com](https://supabase.com) → Create new project
+2. Project name: `rri-thumbnail-generator`
+3. Password: auto-generated (Anda tidak perlu ingat)
+4. Region: `asia-southeast1` (Singapore, terdekat dari Aceh)
+5. Skip / enable backup (optional)
+6. **Database ready** → copy 3 credentials:
+   - `NEXT_PUBLIC_SUPABASE_URL` (format: `https://xxx.supabase.co`)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+7. **Apply migrations:**
+   - Option A (recommended): Via Supabase CLI:
+     ```bash
+     npm install -g supabase
+     supabase link --project-ref <ref>
+     supabase db push
+     ```
+   - Option B: Via dashboard SQL Editor → copy-paste `supabase/migrations/0001_init.sql`
+8. **Create storage buckets** (via dashboard):
+   - Storage → Create bucket: `logos` (public)
+   - Create bucket: `presenters` (public)
+   - Create bucket: `speakers` (public)
+9. **Create admin accounts** (via dashboard):
+   - Authentication → Invite User
+   - Enter 1-3 admin email addresses
+   - They get magic link → set password
+10. **Run seed script:**
+    ```bash
+    npm run seed
+    ```
+    (inserts 2 presenters: Dimas, Ammar)
+11. Paste credentials ke `.env.local`, deploy!
 
-const config = { /* your config */ };
-const app = initializeApp(config);
-const db = getFirestore(app);
-
-const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
-
-async function seed() {
-  await setDoc(doc(db, 'settings', 'auth'), {
-    passwordHash: sha256('admin123'),
-    updatedAt: Timestamp.now(),
-  });
-  await setDoc(doc(db, 'settings', 'branding'), {
-    rriLogoUrl: null, pro1LogoUrl: null,
-    updatedAt: Timestamp.now(),
-  });
-  await addDoc(collection(db, 'presenters'), {
-    name: 'Dimas', backgroundUrl: null,
-    createdAt: Timestamp.now(), updatedAt: Timestamp.now(),
-  });
-  await addDoc(collection(db, 'presenters'), {
-    name: 'Ammar', backgroundUrl: null,
-    createdAt: Timestamp.now(), updatedAt: Timestamp.now(),
-  });
-  console.log('✅ Seed complete');
-}
-seed();
-```
+---
 
 ## 14. Deployment (Vercel)
 
 1. Push repo ke GitHub.
 2. [vercel.com](https://vercel.com) → Add New Project → Import dari GitHub.
 3. Framework Preset: **Next.js** (auto-detected).
-4. **Environment Variables**: paste semua dari `.env.local`.
-5. Deploy.
-6. Setelah live, **update Firebase Storage CORS** untuk include domain Vercel (opsional, kalau pakai whitelist):
-   ```json
-   [{"origin":["https://your-app.vercel.app"], ...}]
+4. **Environment Variables**: paste semua dari `.env.local`:
    ```
-7. Test end-to-end di production URL.
+   NEXT_PUBLIC_SUPABASE_URL
+   NEXT_PUBLIC_SUPABASE_ANON_KEY
+   SUPABASE_SERVICE_ROLE_KEY  (optional, if seed post-deploy)
+   ```
+5. Deploy.
+6. Test end-to-end di production URL.
+
+---
 
 ## 15. Acceptance Criteria
 
 ### Functional
-- [ ] User bisa login dengan password default `admin123`.
+- [ ] User bisa login dengan email + password (dari Supabase Admin).
 - [ ] Setelah login, redirect ke `/generator`.
-- [ ] Logout button bekerja dan kembali ke login.
+- [ ] Logout button di top nav bekerja, kembali ke `/login`.
 - [ ] **Generator:** pilih presenter → background ter-load di preview.
 - [ ] **Generator:** ubah judul, tanggal, jam → preview update real-time.
 - [ ] **Generator:** toggle 1/2/3/4 pembicara → layout circle adjust.
 - [ ] **Generator:** SpeakerSelect bisa search by nama atau jabatan.
 - [ ] **Generator:** klik Download → dapat file PNG 1280×720, isinya sesuai preview.
-- [ ] **Speakers:** add/edit/delete pembicara persisted ke Firestore.
+- [ ] **Speakers:** add/edit/delete pembicara persisted ke Supabase.
 - [ ] **Speakers:** upload foto → tersimpan di Storage → muncul di card.
 - [ ] **Speakers:** search filter list real-time.
 - [ ] **Settings:** upload logo RRI & PRO 1 → muncul di thumbnail Generator.
 - [ ] **Settings:** add/edit/delete presenter persisted.
-- [ ] **Settings:** ubah password → password baru bekerja saat next login.
-- [ ] Refresh page tetap stay logged in (sessionStorage).
-- [ ] Tutup tab → harus login ulang.
+- [ ] **Settings:** "Buka Supabase Dashboard" link works.
+- [ ] Refresh page tetap stay logged in (session cookie persists).
+- [ ] Tutup browser → harus login ulang.
 
 ### Non-Functional
 - [ ] First load < 3 detik di koneksi 4G.
@@ -685,6 +672,8 @@ seed();
 - [ ] Font Space Grotesk + Inter ter-load di UI dan thumbnail.
 - [ ] Warna brand konsisten.
 
+---
+
 ## 16. Out of Scope (v1) — Future Improvements
 
 - Riwayat thumbnail (history page) dengan thumbnail preview + reuse.
@@ -695,15 +684,17 @@ seed();
 - Auto-publish ke YouTube via API.
 - Watermark / batch generation.
 - Audit log siapa edit apa.
-- Export Firestore → backup CSV.
+- Export Supabase → backup CSV.
+
+---
 
 ## 17. Reference Materials
 
 Tim akan menyertakan:
-- `/docs/references/original-thumbnail.png` — full thumbnail jadi
-- `/docs/references/bg-ammar.png` — background presenter Ammar
-- `/docs/references/bg-dimas.png` — background presenter Dimas
-- `/docs/references/mockup.jsx` — React mockup interaktif (single-file artifact dari Tahap 1)
+- `docs/references/original-thumbnail.png` — full thumbnail jadi
+- `docs/references/bg-dimas.png` — background presenter Dimas (1280×720)
+- `docs/references/bg-ammar.png` — background presenter Ammar (1280×720)
+- `docs/references/mockup.jsx` — React mockup interaktif (single-file artifact)
 
 **Brand info:**
 - Nama: RRI PRO 1 Banda Aceh 97.7 FM
@@ -715,28 +706,35 @@ Tim akan menyertakan:
 
 ## Appendix A — Implementation Order (Recommended)
 
-1. **Setup Next.js + Tailwind + TypeScript** boilerplate.
-2. **Firebase init** + env vars + connect to console.
-3. **Run seed script** → confirm data muncul di Firestore.
-4. **Password gate** + session logic.
-5. **Top Nav layout** + 3 routes shell.
-6. **Settings page** — upload logo & manage presenters dulu (jadi data ada).
-7. **Speakers page** — CRUD + search.
-8. **ThumbnailPreview component** — SVG renderer (test pakai data dummy).
-9. **SpeakerSelect component**.
-10. **Generator page** — wire form + preview + download.
-11. **PNG export** — test CORS dengan Storage.
-12. **Polish**: empty states, loading spinners, error handling.
-13. **Deploy ke Vercel**.
-14. **End-to-end test** dengan data real.
+| Step | Task | Owner | Notes |
+|------|------|-------|-------|
+| 1 ✅ | Setup Next.js + Tailwind + TypeScript | Agent | Build ✓, ready for Step 2 |
+| 2 | Supabase project setup + env vars | User | Create project, migrations, buckets, admin accounts |
+| 3 | Run seed script | Agent | Insert 2 presenters (Dimas, Ammar) |
+| 4 | Supabase Auth login page + middleware | Agent | Replace PasswordGate with real auth form |
+| 5 | Top Nav + route shells | Agent | Logo, tabs, logout button |
+| 6 | Settings page (logo + presenters CRUD) | Agent | No password section (auth via Supabase) |
+| 7 | Speakers page (CRUD + search) | Agent | Cards, modals, delete confirm |
+| 8 | ThumbnailPreview SVG renderer | Agent | Test dengan dummy data (needs bg images) |
+| 9 | SpeakerSelect combobox | Agent | Searchable dropdown + photos |
+| 10 | Generator page (form + preview + download) | Agent | Wire form + real-time preview |
+| 11 | PNG export (SVG → canvas) | Agent | Test CORS dengan Supabase Storage |
+| 12 | Polish (empty states, loading, errors) | Agent | Spinners, toast messages, validation |
+| 13 | Deploy ke Vercel | Agent | Push GitHub, link Vercel, set env vars |
+| 14 | E2E test + visual check | User | Compare vs. reference thumbnail |
+
+---
 
 ## Appendix B — Error Handling Patterns
 
-- **Firestore read fail:** show toast "Gagal memuat data. Refresh halaman." + retry button.
+- **Supabase query fail:** show toast "Gagal memuat data. Refresh halaman." + retry button.
 - **Storage upload fail:** show toast "Upload gagal: [reason]". Tetap di form.
-- **PNG export fail (CORS):** show alert "Gagal generate PNG. Pastikan Storage CORS sudah disetup. Lihat dokumentasi."
+- **PNG export fail (CORS):** show alert "Gagal generate PNG. Cek koneksi internet dan pastikan Storage URLs accessible."
 - **Network offline:** show banner kuning "Anda offline. Perubahan tidak akan tersimpan."
 - **Validation errors:** inline message di bawah field, merah, text-xs.
+- **Auth errors (login fail):** "Email atau password salah" (don't reveal which field wrong).
+
+---
 
 ## Appendix C — Performance Tips
 
@@ -745,4 +743,5 @@ Tim akan menyertakan:
 - Debounce search input 200ms (kalau list > 200 item).
 - Resize image client-side sebelum upload (canvas).
 - `next/image` untuk gambar UI (tapi NOT untuk SVG `<image>` — pakai URL langsung).
-- Cache Firebase queries di Context (avoid re-fetch saat pindah halaman).
+- Cache Supabase queries di Context (avoid re-fetch saat pindah halaman).
+- Use HTTP-only cookies for session (handled by `@supabase/ssr`, so no JS access to token).
