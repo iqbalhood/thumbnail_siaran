@@ -2,6 +2,22 @@
 
 import React from 'react';
 
+function wrapText(text: string, maxChars: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if ((current + ' ' + word).trim().length > maxChars) {
+      if (current) lines.push(current.trim());
+      current = word;
+    } else {
+      current = (current + ' ' + word).trim();
+    }
+  }
+  if (current) lines.push(current.trim());
+  return lines;
+}
+
 export interface SpeakerData {
   name: string;
   position: string;
@@ -77,7 +93,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           x="80"
           y="180"
           fill="white"
-          fontFamily="var(--font-display), sans-serif"
+          fontFamily="Space Grotesk, sans-serif"
           fontSize="36"
           fontWeight="700"
           textAnchor="start"
@@ -92,7 +108,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           x="80"
           y="295"
           fill="white"
-          fontFamily="var(--font-inter), sans-serif"
+          fontFamily="Inter, sans-serif"
           fontSize="22"
           fontWeight="700"
           letterSpacing="1"
@@ -110,7 +126,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             x="32"
             y="18"
             fill="white"
-            fontFamily="var(--font-inter), sans-serif"
+            fontFamily="Inter, sans-serif"
             fontSize="20"
             fontWeight="700"
           >
@@ -126,7 +142,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             x="32"
             y="20"
             fill="white"
-            fontFamily="var(--font-inter), sans-serif"
+            fontFamily="Inter, sans-serif"
             fontSize="20"
             fontWeight="700"
           >
@@ -172,7 +188,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   x={pos.x - r}
                   y={pos.y + r + 28}
                   fill="white"
-                  fontFamily="var(--font-inter), sans-serif"
+                  fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
                   fontWeight="700"
                   textAnchor="start"
@@ -180,31 +196,20 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   {speaker.name}
                 </text>
                 
-                {/* Position - Left Aligned (Issue Fix) */}
-                <foreignObject
+                {/* Position - SVG text with manual wrap */}
+                <text
                   x={pos.x - r}
-                  y={pos.y + r + 42}
-                  width={layout.textWidth}
-                  height="80"
+                  y={pos.y + r + 58}
+                  fill="white"
+                  fontFamily="Inter, sans-serif"
+                  fontSize={layout.posFontSize}
+                  fontWeight="500"
+                  textAnchor="start"
                 >
-                  <div 
-                    style={{ 
-                      color: 'white', 
-                      fontFamily: 'var(--font-inter), sans-serif', 
-                      fontSize: `${layout.posFontSize}px`,
-                      fontWeight: 500,
-                      textTransform: 'uppercase',
-                      textAlign: 'left',
-                      lineHeight: '1.3',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 4,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {speaker.position}
-                  </div>
-                </foreignObject>
+                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 4).map((line, li) => (
+                    <tspan key={li} x={pos.x - r} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
+                  ))}
+                </text>
               </g>
             );
           })
@@ -250,7 +255,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             x="60"
             y="18"
             fill="white"
-            fontFamily="var(--font-inter), sans-serif"
+            fontFamily="Inter, sans-serif"
             fontSize="16"
             fontWeight="700"
           >
@@ -260,7 +265,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             x="60"
             y="40"
             fill="white"
-            fontFamily="var(--font-inter), sans-serif"
+            fontFamily="Inter, sans-serif"
             fontSize="16"
             fontWeight="700"
           >
