@@ -1,60 +1,20 @@
-// Transparent 1×1 GIF — used as placeholder when an image cannot be converted,
-// so the canvas does NOT get tainted by a lingering external URL.
-const TRANSPARENT_PLACEHOLDER =
-  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
 /**
- * Converts an external URL to a Base64 Data URL.
- *
- * Strategy (two-pass):
- *  1. fetch() with CORS mode — works when the storage bucket sends CORS headers.
- *  2. If fetch fails, draw the image onto a temp canvas via HTMLImageElement
- *     with crossOrigin = 'anonymous'.  Works when the server allows the origin
- *     but fetch is blocked by browser policy.
- *  3. If both fail, return a transparent placeholder so the main canvas is
- *     never tainted by a lingering http:// URL.
+ * Fetches an external image through our same-origin proxy route and returns
+ * a Base64 Data URL. Because the fetch is same-origin (localhost → localhost),
+ * the browser canvas is never "tainted" regardless of what CORS headers the
+ * original storage server sends.
  */
-async function toDataURL(url: string): Promise<string> {
-  // --- Pass 1: fetch ---
-  try {
-    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (fetchErr) {
-    console.warn('[export] fetch failed, trying Image fallback:', url, fetchErr);
-  }
-
-  // --- Pass 2: HTMLImageElement + temp canvas ---
-  try {
-    return await new Promise<string>((resolve, reject) => {
-      const tempImg = new Image();
-      tempImg.crossOrigin = 'anonymous';
-      tempImg.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = tempImg.naturalWidth || 1;
-        c.height = tempImg.naturalHeight || 1;
-        const ctx = c.getContext('2d');
-        if (!ctx) return reject(new Error('no 2d context'));
-        ctx.drawImage(tempImg, 0, 0);
-        try {
-          resolve(c.toDataURL('image/png'));
-        } catch (e) {
-          reject(e);
-        }
-      };
-      tempImg.onerror = () => reject(new Error('image load failed'));
-      tempImg.src = url;
-    });
-  } catch (imgErr) {
-    console.error('[export] Image fallback also failed, using placeholder:', url, imgErr);
-    return TRANSPARENT_PLACEHOLDER;
-  }
+async function toDataURL(externalUrl: string): Promise<string> {
+  const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(externalUrl)}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error(`proxy fetch failed: ${res.status}`);
+  const blob = await res.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 /**
@@ -67,16 +27,30 @@ export async function exportToPng(svgId: string, fileName: string) {
   // 1. Clone so we don't mutate the live DOM
   const clonedSvg = svgElement.cloneNode(true) as SVGSVGElement;
 
-  // 2. Replace every external <image href> with a data URL (or placeholder)
-  //    so the canvas is never tainted.
+  // 2. Replace every external <image> href with a data URL via our proxy.
+  //    We check both href and xlink:href (namespaced) to cover all browsers.
+  const XLINK = 'http://www.w3.org/1999/xlink';
   const imageEls = Array.from(clonedSvg.querySelectorAll('image'));
+
   await Promise.all(
     imageEls.map(async (el) => {
-      const href = el.getAttribute('href') ?? el.getAttribute('xlink:href');
-      if (href && href.startsWith('http')) {
+      const href =
+        el.getAttribute('href') ||
+        el.getAttributeNS(XLINK, 'href') ||
+        null;
+
+      if (!href || !href.startsWith('http')) return;
+
+      try {
         const dataUrl = await toDataURL(href);
         el.setAttribute('href', dataUrl);
-        el.removeAttribute('xlink:href'); // avoid duplicate references
+        el.removeAttributeNS(XLINK, 'href'); // remove xlink:href if present
+      } catch (err) {
+        // If proxy also fails, remove the external URL entirely so canvas
+        // is never tainted. The image will simply not appear.
+        console.error('[export] failed to proxy image:', href, err);
+        el.removeAttribute('href');
+        el.removeAttributeNS(XLINK, 'href');
       }
     })
   );
