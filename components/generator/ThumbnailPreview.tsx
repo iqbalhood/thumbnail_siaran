@@ -34,12 +34,12 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     speakers = [],
     rriLogoUrl,
     pro1LogoUrl,
-  } = data;  // Updated speaker layouts to avoid overlap (Issue 1)
+  } = data;  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
-    1: { positions: [{ x: 400, y: 380 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
-    2: { positions: [{ x: 280, y: 380 }, { x: 540, y: 380 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
-    3: { positions: [{ x: 200, y: 380 }, { x: 420, y: 380 }, { x: 640, y: 380 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
-    4: { positions: [{ x: 150, y: 380 }, { x: 350, y: 380 }, { x: 550, y: 380 }, { x: 750, y: 380 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
+    1: { positions: [{ x: 160, y: 380 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
+    2: { positions: [{ x: 150, y: 380 }, { x: 410, y: 380 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
+    3: { positions: [{ x: 145, y: 380 }, { x: 365, y: 380 }, { x: 585, y: 380 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
+    4: { positions: [{ x: 135, y: 380 }, { x: 335, y: 380 }, { x: 535, y: 380 }, { x: 735, y: 380 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
   };
 
   const count = Math.min(Math.max(speakers.length, 1), 4);
