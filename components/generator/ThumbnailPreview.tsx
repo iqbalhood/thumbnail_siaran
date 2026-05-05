@@ -245,7 +245,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           </g>
           
           {/* Username text */}
-          <text x={150} y={31} fill="#0c1e4a" fontSize="17" fontWeight="700" fontFamily="Inter, sans-serif">
+          <text x={150} y={31} fill="#0c1e4a" fontSize="17" fontWeight="700" fontFamily="Space Grotesk, sans-serif">
             @rri_bandaaceh
           </text>
         </g>
