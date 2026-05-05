@@ -36,15 +36,15 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     pro1LogoUrl,
   } = data;  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
-    1: { positions: [{ x: 160, y: 380 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
-    2: { positions: [{ x: 150, y: 380 }, { x: 410, y: 380 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
-    3: { positions: [{ x: 145, y: 380 }, { x: 365, y: 380 }, { x: 585, y: 380 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
-    4: { positions: [{ x: 135, y: 380 }, { x: 335, y: 380 }, { x: 535, y: 380 }, { x: 735, y: 380 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
+    1: { positions: [{ x: 160, y: 440 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
+    2: { positions: [{ x: 150, y: 440 }, { x: 410, y: 440 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
+    3: { positions: [{ x: 145, y: 440 }, { x: 365, y: 440 }, { x: 585, y: 440 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
+    4: { positions: [{ x: 135, y: 440 }, { x: 335, y: 440 }, { x: 535, y: 440 }, { x: 735, y: 440 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
   };
 
   const count = Math.min(Math.max(speakers.length, 1), 4);
   const layout = speakerLayouts[count];
-  const speakerY = 380;
+  const speakerY = 440;
 
   return (
     <div className="w-full aspect-video bg-slate-200 rounded-xl overflow-hidden shadow-2xl border border-slate-300 relative group">
