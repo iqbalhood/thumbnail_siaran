@@ -34,21 +34,16 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     speakers = [],
     rriLogoUrl,
     pro1LogoUrl,
-  } = data;
-
-  // Speaker configuration based on count (Section 11.4)
-  const getSpeakerConfig = (count: number) => {
-    switch (count) {
-      case 1: return { positions: [380], radius: 70 };
-      case 2: return { positions: [290, 470], radius: 70 };
-      case 3: return { positions: [200, 380, 560], radius: 65 };
-      case 4: return { positions: [130, 290, 450, 610], radius: 55 };
-      default: return { positions: [380], radius: 70 };
-    }
+  } = data;  // Updated speaker layouts to avoid overlap (Issue 1)
+  const speakerLayouts: Record<number, any> = {
+    1: { positions: [{ x: 400, y: 380 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
+    2: { positions: [{ x: 280, y: 380 }, { x: 540, y: 380 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
+    3: { positions: [{ x: 200, y: 380 }, { x: 420, y: 380 }, { x: 640, y: 380 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
+    4: { positions: [{ x: 150, y: 380 }, { x: 350, y: 380 }, { x: 550, y: 380 }, { x: 750, y: 380 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
   };
 
   const count = Math.min(Math.max(speakers.length, 1), 4);
-  const { positions, radius } = getSpeakerConfig(count);
+  const layout = speakerLayouts[count];
   const speakerY = 380;
 
   return (
@@ -60,24 +55,24 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full"
       >
-        {/* 1. Background Layer (Section 11.1) */}
+        {/* 1. Background Layer */}
         {presenterBgUrl ? (
           <image href={presenterBgUrl} width="1280" height="720" preserveAspectRatio="xMidYMid slice" />
         ) : (
           <rect width="1280" height="720" fill="#060f2c" />
         )}
 
-        {/* 2. Logo RRI (x=80, y=50) */}
+        {/* 2. Logo RRI */}
         {rriLogoUrl && (
           <image href={rriLogoUrl} x="80" y="50" width="140" height="70" preserveAspectRatio="xMinYMid meet" />
         )}
 
-        {/* 3. Logo PRO 1 (x=1080, y=45) */}
+        {/* 3. Logo PRO 1 */}
         {pro1LogoUrl && (
           <image href={pro1LogoUrl} x="1080" y="45" width="140" height="70" preserveAspectRatio="xMaxYMid meet" />
         )}
 
-        {/* 4. Title (x=80, y=180, Space Grotesk 700, 36px) */}
+        {/* 4. Title */}
         <text
           x="80"
           y="180"
@@ -92,7 +87,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           ))}
         </text>
 
-        {/* 5. Event Name (x=80, y=295) */}
+        {/* 5. Event Name */}
         <text
           x="80"
           y="295"
@@ -105,7 +100,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           {eventName.toUpperCase()}
         </text>
 
-        {/* 6. Date with Calendar Icon (x=420, y=275) */}
+        {/* 6. Date with Calendar Icon */}
         <g transform="translate(420, 275)">
           <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <path d="M16 2V6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -123,7 +118,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           </text>
         </g>
 
-        {/* 7. Time with Clock Icon (x=750, y=273) */}
+        {/* 7. Time with Clock Icon */}
         <g transform="translate(750, 273)">
           <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
           <path d="M12 6V12L16 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -142,13 +137,13 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {/* 8. Speaker Circles (Y-anchor: 380) */}
         {speakers.length > 0 ? (
           speakers.slice(0, 4).map((speaker, i) => {
-            const x = positions[i];
-            const r = radius;
+            const pos = layout.positions[i];
+            const r = layout.circleR;
             return (
               <g key={i}>
                 <defs>
                   <clipPath id={`speaker-clip-${i}`}>
-                    <circle cx={x} cy={speakerY} r={r} />
+                    <circle cx={pos.x} cy={pos.y} r={r} />
                   </clipPath>
                   <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#60a5fa" />
@@ -156,51 +151,56 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   </linearGradient>
                 </defs>
                 {/* Outer Ring */}
-                <circle cx={x} cy={speakerY} r={r + 5} stroke="url(#ring-grad)" strokeWidth="4" fill="none" />
+                <circle cx={pos.x} cy={pos.y} r={r + 5} stroke="url(#ring-grad)" strokeWidth="4" fill="none" />
                 {/* Speaker Photo */}
                 {speaker.photoUrl ? (
                   <image
                     href={speaker.photoUrl}
-                    x={x - r}
-                    y={speakerY - r}
+                    x={pos.x - r}
+                    y={pos.y - r}
                     width={r * 2}
                     height={r * 2}
                     clipPath={`url(#speaker-clip-${i})`}
                     preserveAspectRatio="xMidYMid slice"
                   />
                 ) : (
-                  <circle cx={x} cy={speakerY} r={r} fill="#1e293b" />
+                  <circle cx={pos.x} cy={pos.y} r={r} fill="#1e293b" />
                 )}
                 
-                {/* Name */}
+                {/* Name - Left Aligned (Issue Fix) */}
                 <text
-                  x={x}
-                  y={speakerY + r + 30}
+                  x={pos.x - r}
+                  y={pos.y + r + 28}
                   fill="white"
                   fontFamily="var(--font-inter), sans-serif"
-                  fontSize={count === 4 ? 13 : 15}
+                  fontSize={layout.fontSize}
                   fontWeight="700"
-                  textAnchor="middle"
+                  textAnchor="start"
                 >
                   {speaker.name}
                 </text>
                 
-                {/* Position (using foreignObject for multi-line) */}
+                {/* Position - Left Aligned (Issue Fix) */}
                 <foreignObject
-                  x={x - (count === 4 ? 75 : 95)}
-                  y={speakerY + r + 40}
-                  width={count === 4 ? 150 : 190}
-                  height="60"
+                  x={pos.x - r}
+                  y={pos.y + r + 42}
+                  width={layout.textWidth}
+                  height="80"
                 >
                   <div 
+                    xmlns="http://www.w3.org/1999/xhtml"
                     style={{ 
                       color: 'white', 
                       fontFamily: 'var(--font-inter), sans-serif', 
-                      fontSize: count === 4 ? '10px' : '11px',
+                      fontSize: `${layout.posFontSize}px`,
                       fontWeight: 500,
                       textTransform: 'uppercase',
-                      textAlign: 'center',
+                      textAlign: 'left',
                       lineHeight: '1.3',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
                     }}
                   >
                     {speaker.position}
@@ -213,41 +213,37 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           <text x="380" y="450" fill="white" fillOpacity="0.3" textAnchor="middle" fontSize="20" fontWeight="700">PILIH PEMBICARA</text>
         )}
 
-        {/* 9. Footer Medsos Pill (x=80, y=615, w=310, h=48) */}
+        {/* 9. Footer Medsos Pill (Proper SVG Paths - Issue 2) */}
         <g transform="translate(80, 615)">
-          <rect width="310" height="48" rx="24" fill="white" />
-          {/* IG Icon */}
-          <g transform="translate(15, 12) scale(0.6)">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="black" strokeWidth="2" fill="none"/>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" stroke="black" strokeWidth="2" fill="none"/>
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="black" strokeWidth="2"/>
+          <rect x={0} y={0} width={310} height={48} rx={24} fill="white"/>
+          
+          {/* Instagram - x=18 */}
+          <g transform="translate(18, 13)" fill="#0c1e4a">
+            <path d="M11 0H11C7.13 0 4 3.13 4 7V15C4 18.87 7.13 22 11 22H11C14.87 22 18 18.87 18 15V7C18 3.13 14.87 0 11 0ZM16.5 15C16.5 18.04 14.04 20.5 11 20.5C7.96 20.5 5.5 18.04 5.5 15V7C5.5 3.96 7.96 1.5 11 1.5C14.04 1.5 16.5 3.96 16.5 7V15ZM11 6C8.79 6 7 7.79 7 10V12C7 14.21 8.79 16 11 16C13.21 16 15 14.21 15 12V10C15 7.79 13.21 6 11 6ZM13.5 12C13.5 13.38 12.38 14.5 11 14.5C9.62 14.5 8.5 13.38 8.5 12V10C8.5 8.62 9.62 7.5 11 7.5C12.38 7.5 13.5 8.62 13.5 10V12ZM15.5 4.5C14.95 4.5 14.5 4.95 14.5 5.5C14.5 6.05 14.95 6.5 15.5 6.5C16.05 6.5 16.5 6.05 16.5 5.5C16.5 4.95 16.05 4.5 15.5 4.5Z" transform="scale(0.91)"/>
           </g>
-          {/* FB Icon */}
-          <g transform="translate(50, 12) scale(0.6)">
-            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" stroke="black" strokeWidth="2" fill="none"/>
+          
+          {/* Facebook - x=48 */}
+          <g transform="translate(48, 13)" fill="#0c1e4a">
+            <path d="M22 11C22 4.92 17.08 0 11 0C4.92 0 0 4.92 0 11C0 16.49 4.02 21.04 9.28 21.87V14.18H6.49V11H9.28V8.58C9.28 5.83 10.92 4.31 13.43 4.31C14.63 4.31 15.89 4.52 15.89 4.52V7.22H14.5C13.13 7.22 12.7 8.07 12.7 8.95V11H15.76L15.27 14.18H12.7V21.87C17.98 21.04 22 16.49 22 11Z" transform="scale(0.91)"/>
           </g>
-          {/* TikTok Icon */}
-          <g transform="translate(85, 12) scale(0.6)">
-            <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="black" strokeWidth="2" fill="none"/>
+          
+          {/* TikTok - x=78 */}
+          <g transform="translate(78, 13)" fill="#0c1e4a">
+            <path d="M16.6 5.82C15.92 5.42 15.34 4.85 14.9 4.17C14.42 3.43 14.16 2.55 14.16 1.65V1H10.85V14.13C10.85 15.36 9.85 16.36 8.62 16.36C7.4 16.36 6.4 15.36 6.4 14.13C6.4 12.91 7.4 11.91 8.62 11.91C8.95 11.91 9.27 11.98 9.55 12.11V8.74C9.25 8.7 8.94 8.68 8.62 8.68C5.62 8.68 3.18 11.13 3.18 14.13C3.18 17.13 5.62 19.58 8.62 19.58C11.62 19.58 14.07 17.13 14.07 14.13V8.05C15.21 8.85 16.59 9.32 18.09 9.32V6C17.55 6 17.04 5.94 16.6 5.82Z" transform="scale(0.91)"/>
           </g>
-          {/* YT Icon */}
-          <g transform="translate(120, 12) scale(0.6)">
-            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2C5.12 19.5 12 19.5 12 19.5s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 2.9 2.9 0 0 0-.46-5.33z" stroke="black" strokeWidth="2" fill="none"/>
-            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="black"/>
+          
+          {/* YouTube - x=108 */}
+          <g transform="translate(108, 15)" fill="#0c1e4a">
+            <path d="M21.58 3.18C21.34 2.27 20.62 1.55 19.7 1.31C18.05 0.85 11.39 0.85 11.39 0.85C11.39 0.85 4.74 0.85 3.08 1.31C2.17 1.55 1.45 2.27 1.21 3.18C0.75 4.84 0.75 8.32 0.75 8.32C0.75 8.32 0.75 11.79 1.21 13.45C1.45 14.36 2.17 15.05 3.08 15.29C4.74 15.75 11.39 15.75 11.39 15.75C11.39 15.75 18.05 15.75 19.7 15.29C20.62 15.05 21.34 14.36 21.58 13.45C22.04 11.79 22.04 8.32 22.04 8.32C22.04 8.32 22.04 4.84 21.58 3.18ZM9.27 11.49V5.14L14.79 8.32L9.27 11.49Z" transform="scale(0.91)"/>
           </g>
-          <text
-            x="155"
-            y="31"
-            fill="black"
-            fontFamily="var(--font-inter), sans-serif"
-            fontSize="14"
-            fontWeight="700"
-          >
-            @RRI_BANDAACEH
+          
+          {/* Username text */}
+          <text x={150} y={31} fill="#0c1e4a" fontSize="17" fontWeight="700" fontFamily="Inter, sans-serif">
+            @rri_bandaaceh
           </text>
         </g>
 
-        {/* 10. Info Promosi Bubble (x=440, y=615) */}
+        {/* 10. Info Promosi Bubble */}
         <g transform="translate(440, 615)">
           <circle cx="24" cy="24" r="24" fill="#22c55e" />
           <path transform="translate(12, 12) scale(1)" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
