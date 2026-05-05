@@ -26,9 +26,13 @@ export default function GeneratorPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   // Form State
-  const [title, setTitle] = useState('DIALOG INTERAKTIF: PEMUDA DAN MASA DEPAN ACEH');
+  const [title, setTitle] = useState('SEKOLAH RAKYAT DI ACEH:\nMENJAWAB TANTANGAN PENDIDIKAN PINGGIRAN');
+  const [eventName, setEventName] = useState('BANDA ACEH MENYAPA');
+  const [date, setDate] = useState('SELASA, 29 JULI 2025');
+  const [time, setTime] = useState('09:00 – 10:00 WIB');
   const [selectedPresenterId, setSelectedPresenterId] = useState<string>('');
-  const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
+  const [speakerCount, setSpeakerCount] = useState<number>(1);
+  const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null]);
 
   useEffect(() => {
     fetchInitialData();
@@ -48,7 +52,7 @@ export default function GeneratorPage() {
       setBranding(bRes.data);
 
       if (pRes.data && pRes.data.length > 0) {
-        setSelectedPresenterId(pRes.data[0].id);
+        setSelectedPresenterId((pRes.data as any)[0].id);
       }
     } catch (error) {
       console.error('Error fetching generator data:', error);
@@ -58,7 +62,16 @@ export default function GeneratorPage() {
   };
 
   const selectedPresenter = presenters.find((p) => p.id === selectedPresenterId);
-  const selectedSpeaker = speakers.find((s) => s.id === selectedSpeakerId);
+  
+  // Resolve speakers for the preview
+  const resolvedSpeakers = selectedSpeakerIds.slice(0, speakerCount).map((id) => {
+    const speaker = speakers.find((s) => s.id === id);
+    return {
+      name: speaker?.full_name || 'NAMA NARASUMBER',
+      position: speaker?.position || 'JABATAN NARASUMBER',
+      photoUrl: speaker?.photo_url || null,
+    };
+  });
 
   const handleDownload = async () => {
     setIsExporting(true);
@@ -70,6 +83,12 @@ export default function GeneratorPage() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleSpeakerSelect = (index: number, speakerId: string | null) => {
+    const newIds = [...selectedSpeakerIds];
+    newIds[index] = speakerId;
+    setSelectedSpeakerIds(newIds);
   };
 
   if (isLoading) {
@@ -97,24 +116,39 @@ export default function GeneratorPage() {
             <p className="text-sm text-slate-500 italic">Isi form di bawah untuk membuat thumbnail dialog.</p>
           </header>
 
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-8 space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-8 space-y-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
             
             {/* 1. Judul Dialog */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
                 <Type size={16} className="text-slate-400" />
-                Judul Dialog
+                Judul Dialog (Gunakan ENTER untuk baris baru)
               </label>
               <textarea
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Masukkan judul dialog..."
-                className="w-full min-h-[100px] p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium resize-none"
+                className="w-full min-h-[100px] p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium resize-none uppercase"
               />
-              <p className="text-[10px] text-slate-400 italic text-right">Maksimum 3 baris untuk hasil terbaik.</p>
             </div>
 
-            {/* 2. Pilih Presenter (Background) */}
+            {/* 2. Nama Acara, Tanggal, Jam */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Acara</label>
+                <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Tanggal</label>
+                <Input value={date} onChange={(e) => setDate(e.target.value)} className="bg-slate-50 rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Jam</label>
+                <Input value={time} onChange={(e) => setTime(e.target.value)} className="bg-slate-50 rounded-xl" />
+              </div>
+            </div>
+
+            {/* 3. Pilih Presenter (Background) */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
                 <ImageIcon size={16} className="text-slate-400" />
@@ -150,17 +184,38 @@ export default function GeneratorPage() {
               </div>
             </div>
 
-            {/* 3. Pilih Narasumber */}
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                <UserCircle2 size={16} className="text-slate-400" />
-                Data Narasumber
-              </label>
-              <SpeakerSelect
-                speakers={speakers}
-                selectedSpeakerId={selectedSpeakerId}
-                onSelect={(speaker) => setSelectedSpeakerId(speaker?.id || null)}
-              />
+            {/* 4. Pilih Narasumber */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                  <UserCircle2 size={16} className="text-slate-400" />
+                  Jumlah Pembicara
+                </label>
+                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                  {[1, 2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setSpeakerCount(n)}
+                      className={`w-8 h-8 rounded-md text-xs font-bold transition-all ${
+                        speakerCount === n ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {Array.from({ length: speakerCount }).map((_, i) => (
+                  <SpeakerSelect
+                    key={i}
+                    speakers={speakers}
+                    selectedSpeakerId={selectedSpeakerIds[i]}
+                    onSelect={(speaker) => handleSpeakerSelect(i, speaker?.id || null)}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="pt-4">
@@ -185,7 +240,7 @@ export default function GeneratorPage() {
         {/* Right: Live Preview */}
         <div className="lg:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Live Preview</h2>
+            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Live Preview (1280 × 720)</h2>
             <button 
               onClick={fetchInitialData}
               className="text-slate-400 hover:text-orange-500 transition-colors flex items-center gap-2 text-xs font-bold"
@@ -199,26 +254,15 @@ export default function GeneratorPage() {
             <ThumbnailPreview
               data={{
                 title,
-                speakerName: selectedSpeaker?.full_name || 'NAMA NARASUMBER',
-                speakerPosition: selectedSpeaker?.position || 'JABATAN NARASUMBER',
+                eventName,
+                date,
+                time,
                 presenterBgUrl: selectedPresenter?.background_url || null,
-                speakerPhotoUrl: selectedSpeaker?.photo_url || null,
+                speakers: resolvedSpeakers,
                 rriLogoUrl: branding?.rri_logo_url || null,
                 pro1LogoUrl: branding?.pro1_logo_url || null,
               }}
             />
-            
-            <div className="mt-8 bg-blue-50 border border-blue-100 rounded-2xl p-6 flex gap-4">
-              <div className="w-12 h-12 bg-blue-500 text-white rounded-xl flex-shrink-0 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <RefreshCw size={24} />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-blue-900">Real-time Rendering</h4>
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  Pratinjau di atas menggunakan teknologi SVG. Apapun yang Anda ketik atau pilih akan langsung terlihat hasilnya secara akurat sebelum diunduh.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
