@@ -1,37 +1,38 @@
-/**
- * Supabase Client (Browser)
- *
- * Used in client components for auth, real-time queries, storage.
- *
- * TODO (Step 2):
- * - Implement createBrowserClient() initialization
- * - Add auth state listener for session persistence
- * - Export helper functions (signIn, signOut, fetchSpeakers, etc.)
- */
-
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
 
-let client: ReturnType<typeof createBrowserClient> | null = null;
+export const createClient = () =>
+  createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-export function getSupabaseClient() {
-  if (!client) {
-    client = createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-  }
-  return client;
+export const supabase = createClient();
+
+// Helper functions
+export async function getSpeakers() {
+  const { data, error } = await supabase
+    .from('speakers')
+    .select('*')
+    .order('full_name');
+  if (error) throw error;
+  return data;
 }
 
-export const supabase = getSupabaseClient();
+export async function getPresenters() {
+  const { data, error } = await supabase
+    .from('presenters')
+    .select('*')
+    .order('name');
+  if (error) throw error;
+  return data;
+}
 
-// TODO: Add helper functions
-// - signInWithPassword(email, password)
-// - signOut()
-// - getSession()
-// - getSpeakers(limit?, offset?, search?)
-// - getPresenters()
-// - getBrandingSettings()
-// - uploadSpeakerPhoto(file)
-// - etc.
+export async function getBrandingSettings() {
+  const { data, error } = await supabase
+    .from('branding_settings')
+    .select('*')
+    .single();
+  if (error && error.code !== 'PGRST116') throw error; // Ignore not found
+  return data;
+}

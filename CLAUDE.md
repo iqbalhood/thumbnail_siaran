@@ -38,14 +38,12 @@ Visit `http://localhost:3000` → auto-redirects to `/generator` (auth gate will
 - Route group `(protected)/{generator,speakers,settings}` with stubs
 - Build verified: `next build` ✓ (87.4 kB initial JS)
 
-⏸️ **Pending (Step 2+)**
-- Supabase project creation + env vars (user responsibility)
-- PRD rewrite: Firebase → Supabase (in-place)
-- package.json: swap `firebase` → `@supabase/supabase-js` + `@supabase/ssr`
-- `lib/supabase/` client + server setup
-- Firestore collections → Postgres tables (SQL migrations)
-- Auth login page + middleware
-- Password gate → real Supabase Auth (email + password, 1-3 admin accounts)
+✅ **Step 2 Complete**
+- Supabase client, server, and middleware setup
+- SQL migrations fixed (current_user_id → auth.uid)
+- Root middleware implemented
+- types/database.ts stubbed
+- lib/firestore/ deleted
 
 ❌ **Missing Assets** (needed by Step 8)
 - `docs/references/bg-dimas.png` — presenter background template (Dimas)
@@ -246,13 +244,13 @@ SUPABASE_SERVICE_ROLE_KEY=...  # server-only, for seed script
 | Step | Task | Owner | Est. Time | Notes |
 |------|------|-------|-----------|-------|
 | 1 ✅ | Setup Next.js + Tailwind + TypeScript | Done | — | Build passing, ready for Step 2 |
-| 2 | Supabase init (project + env + migrations) | User | ~20min | User creates project; Agent applies SQL migrations |
-| 3 | Run seed script (2 presenters) | Agent | ~5min | `npm run seed` |
-| 4 | Supabase Auth login page + middleware | Agent | ~1hr | Replace PasswordGate with real auth form |
+| 2 ✅ | Supabase init (project + env + migrations) | Done | — | Client, server, middleware setup complete |
+| 3 ✅ | Run seed script (2 presenters) | Done | — | Dimas, Ammar, and Branding settings seeded |
+| 4 ✅ | Supabase Auth login page + middleware | Done | — | Login page created and routes protected |
 | 5 | Top Nav layout + 3 routes shell | Agent | ~30min | Logo, nav tabs, logout button |
-| 6 | Settings page (logo upload + presenters CRUD) | Agent | ~2hr | No password section (auth via Supabase) |
-| 7 | Speakers page (CRUD + search) | Agent | ~2hr | Search, modals, delete confirm |
-| 8 | ThumbnailPreview SVG renderer | Agent | ~2hr | Test with dummy data (needs bg images) |
+| 6 ✅ | Settings page (logo upload + presenters CRUD) | Done | — | Logos and presenters managed in storage |
+| 7 ✅ | Speakers page (CRUD + search) | Done | — | Searchable speaker database implemented |
+| 8 | Thumbnail Renderer Component (Canvas/Image logic) | Agent | ~2hr | The core rendering engine |
 | 9 | SpeakerSelect combobox | Agent | ~1hr | Searchable dropdown with photos |
 | 10 | Generator page (form + preview + download) | Agent | ~2hr | Wire form fields + real-time preview |
 | 11 | PNG export (SVG → canvas → blob) | Agent | ~1hr | Test CORS with Supabase Storage |

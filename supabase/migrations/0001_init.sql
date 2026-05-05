@@ -25,7 +25,7 @@ create table speakers (
 -- Presenters (host program: Dimas, Ammar, dst.)
 create table presenters (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
+  name text not null unique,
   background_url text,  -- Supabase Storage URL (1280×720)
   background_path text, -- Storage path for delete
   created_at timestamptz default now(),
@@ -57,19 +57,19 @@ create policy "speakers_select" on speakers
 
 create policy "speakers_insert" on speakers
   for insert to authenticated with check (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 create policy "speakers_update" on speakers
   for update to authenticated using (
-    current_user_id() is not null
+    auth.uid() is not null
   ) with check (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 create policy "speakers_delete" on speakers
   for delete to authenticated using (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 -- Presenters: public read, authenticated write
@@ -78,19 +78,19 @@ create policy "presenters_select" on presenters
 
 create policy "presenters_insert" on presenters
   for insert to authenticated with check (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 create policy "presenters_update" on presenters
   for update to authenticated using (
-    current_user_id() is not null
+    auth.uid() is not null
   ) with check (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 create policy "presenters_delete" on presenters
   for delete to authenticated using (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 -- Branding Settings: public read, authenticated write
@@ -99,9 +99,9 @@ create policy "branding_select" on branding_settings
 
 create policy "branding_update" on branding_settings
   for update to authenticated using (
-    current_user_id() is not null
+    auth.uid() is not null
   ) with check (
-    current_user_id() is not null
+    auth.uid() is not null
   );
 
 -- ============================================

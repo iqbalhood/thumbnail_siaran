@@ -1,15 +1,3 @@
-/**
- * Supabase Server Client
- *
- * Used in Server Components, Route Handlers, and seed scripts.
- * Uses SERVICE_ROLE_KEY for admin operations.
- *
- * TODO (Step 2+):
- * - Implement createServerClient() via @supabase/ssr
- * - Handle cookies for session refresh
- * - Export admin helper functions
- */
-
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
@@ -25,10 +13,16 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
+        setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch (error) {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
       },
     }
@@ -48,8 +42,3 @@ export function createAdminClient() {
     }
   );
 }
-
-// TODO: Add server-only helper functions
-// - seedPresenters()
-// - seedBrandingSettings()
-// - etc.
