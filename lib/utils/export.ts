@@ -2,8 +2,20 @@
  * Converts a URL to a Base64 Data URL to avoid Canvas "tainted" security issues.
  */
 async function toDataURL(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
+  let blob: Blob;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response not ok');
+    blob = await response.blob();
+  } catch (error) {
+    console.warn(`Direct fetch failed for ${url}, trying proxy...`, error);
+    // Use Next.js API proxy to bypass CORS restrictions
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('Proxy fetch failed');
+    blob = await response.blob();
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
