@@ -188,7 +188,6 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   height="80"
                 >
                   <div 
-                    xmlns="http://www.w3.org/1999/xhtml"
                     style={{ 
                       color: 'white', 
                       fontFamily: 'var(--font-inter), sans-serif', 
