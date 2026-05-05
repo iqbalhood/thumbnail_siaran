@@ -33,6 +33,7 @@ export default function GeneratorPage() {
   const [selectedPresenterId, setSelectedPresenterId] = useState<string>('');
   const [speakerCount, setSpeakerCount] = useState<number>(1);
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null]);
+  const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
 
   useEffect(() => {
     fetchInitialData();
@@ -218,6 +219,28 @@ export default function GeneratorPage() {
               </div>
             </div>
 
+            {/* 5. Atur Jarak Pembicara */}
+            {speakerCount > 1 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                    <span className="text-slate-400">↔️</span>
+                    Jarak Antar Pembicara
+                  </label>
+                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{speakerSpacingOffset > 0 ? `+${speakerSpacingOffset}` : speakerSpacingOffset} px</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="-100" 
+                  max="100" 
+                  step="5"
+                  value={speakerSpacingOffset} 
+                  onChange={(e) => setSpeakerSpacingOffset(Number(e.target.value))}
+                  className="w-full accent-orange-500"
+                />
+              </div>
+            )}
+
             <div className="pt-4">
               <Button
                 onClick={handleDownload}
@@ -261,6 +284,7 @@ export default function GeneratorPage() {
                 speakers: resolvedSpeakers,
                 rriLogoUrl: branding?.rri_logo_url || null,
                 pro1LogoUrl: branding?.pro1_logo_url || null,
+                speakerSpacingOffset,
               }}
             />
           </div>

@@ -33,6 +33,7 @@ export interface ThumbnailData {
   speakers: SpeakerData[];
   rriLogoUrl: string | null;
   pro1LogoUrl: string | null;
+  speakerSpacingOffset?: number;
 }
 
 interface ThumbnailPreviewProps {
@@ -50,6 +51,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     speakers = [],
     rriLogoUrl,
     pro1LogoUrl,
+    speakerSpacingOffset = 0,
   } = data;  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
     1: { positions: [{ x: 160, y: 405 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
@@ -154,12 +156,13 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {speakers.length > 0 ? (
           speakers.slice(0, 4).map((speaker, i) => {
             const pos = layout.positions[i];
+            const currentX = pos.x + (i * speakerSpacingOffset);
             const r = layout.circleR;
             return (
               <g key={i}>
                 <defs>
                   <clipPath id={`speaker-clip-${i}`}>
-                    <circle cx={pos.x} cy={pos.y} r={r} />
+                    <circle cx={currentX} cy={pos.y} r={r} />
                   </clipPath>
                   <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#60a5fa" />
@@ -167,12 +170,12 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   </linearGradient>
                 </defs>
                 {/* Outer Ring */}
-                <circle cx={pos.x} cy={pos.y} r={r + 5} stroke="url(#ring-grad)" strokeWidth="4" fill="none" />
+                <circle cx={currentX} cy={pos.y} r={r + 5} stroke="url(#ring-grad)" strokeWidth="4" fill="none" />
                 {/* Speaker Photo */}
                 {speaker.photoUrl ? (
                   <image
                     href={speaker.photoUrl}
-                    x={pos.x - r}
+                    x={currentX - r}
                     y={pos.y - r}
                     width={r * 2}
                     height={r * 2}
@@ -180,12 +183,12 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                     preserveAspectRatio="xMidYMid slice"
                   />
                 ) : (
-                  <circle cx={pos.x} cy={pos.y} r={r} fill="#1e293b" />
+                  <circle cx={currentX} cy={pos.y} r={r} fill="#1e293b" />
                 )}
                 
                 {/* Name - Left Aligned (Issue Fix) */}
                 <text
-                  x={pos.x - r}
+                  x={currentX - r}
                   y={pos.y + r + 28}
                   fill="white"
                   fontFamily="Inter, sans-serif"
@@ -198,7 +201,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                 
                 {/* Position - SVG text with manual wrap */}
                 <text
-                  x={pos.x - r}
+                  x={currentX - r}
                   y={pos.y + r + 58}
                   fill="white"
                   fontFamily="Inter, sans-serif"
@@ -207,7 +210,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   textAnchor="start"
                 >
                   {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 4).map((line, li) => (
-                    <tspan key={li} x={pos.x - r} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
+                    <tspan key={li} x={currentX - r} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
                   ))}
                 </text>
               </g>
