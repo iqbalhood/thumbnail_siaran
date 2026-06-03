@@ -72,13 +72,15 @@ export default function SettingsPage() {
 
   const handlePresenterSubmit = async (data: any) => {
     try {
-      if (editingPresenter) {
+      if (editingPresenter?.id) {
+        // UPDATE existing presenter
         const { error } = await (supabase
           .from('presenters') as any)
           .update(data)
           .eq('id', editingPresenter.id);
         if (error) throw error;
       } else {
+        // INSERT new presenter
         const { error } = await (supabase
           .from('presenters') as any)
           .insert([data]);
