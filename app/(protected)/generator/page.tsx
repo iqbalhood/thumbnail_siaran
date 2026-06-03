@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { ThumbnailPreview } from '@/components/generator/ThumbnailPreview';
 import { SpeakerSelect } from '@/components/generator/SpeakerSelect';
@@ -105,6 +105,7 @@ export default function GeneratorPage() {
   const [speakerCount, setSpeakerCount] = useState<number>(1);
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null]);
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Synchronize time picker when manually typing in time text field
   useEffect(() => {
@@ -234,20 +235,27 @@ export default function GeneratorPage() {
                     className="bg-slate-50 rounded-xl pr-12 uppercase font-medium"
                     placeholder="SELASA, 29 JULI 2025"
                   />
-                  <div className="absolute right-3 flex items-center justify-center cursor-pointer">
-                    <input
-                      type="date"
-                      value={parseIndonesianDate(date)}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setDate(formatIndonesianDate(e.target.value));
-                        }
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-8 h-8 z-10"
-                      style={{ colorScheme: 'light' }}
-                    />
-                    <Calendar size={18} className="text-slate-400 hover:text-orange-500 transition-colors pointer-events-none" />
-                  </div>
+                  {/* Hidden native date input — triggered programmatically via ref */}
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={parseIndonesianDate(date)}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setDate(formatIndonesianDate(e.target.value));
+                      }
+                    }}
+                    className="sr-only"
+                    style={{ colorScheme: 'light' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => dateInputRef.current?.showPicker()}
+                    className="absolute right-3 flex items-center justify-center p-1 rounded-lg hover:bg-orange-50 transition-colors group"
+                    title="Pilih tanggal"
+                  >
+                    <Calendar size={18} className="text-slate-400 group-hover:text-orange-500 transition-colors" />
+                  </button>
                 </div>
               </div>
 
