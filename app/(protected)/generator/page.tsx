@@ -97,7 +97,13 @@ export default function GeneratorPage() {
   // Form State
   const [title, setTitle] = useState('SEKOLAH RAKYAT DI ACEH:\nMENJAWAB TANTANGAN PENDIDIKAN PINGGIRAN');
   const [eventName, setEventName] = useState('BANDA ACEH MENYAPA');
-  const [date, setDate] = useState('SELASA, 29 JULI 2025');
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return formatIndonesianDate(`${yyyy}-${mm}-${dd}`);
+  });
   const [time, setTime] = useState('09:00 – 10:00 WIB');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
