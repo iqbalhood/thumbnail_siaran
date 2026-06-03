@@ -214,81 +214,79 @@ export default function GeneratorPage() {
             </div>
 
             {/* 2. Nama Acara, Tanggal, Jam */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-2">
+            <div className="space-y-4">
+              {/* Nama Acara */}
+              <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Acara</label>
                 <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" />
               </div>
+
+              {/* Tanggal */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
                   <Calendar size={12} className="text-slate-400" />
                   Tanggal
                 </label>
                 <div className="relative flex items-center">
-                  <Input 
-                    value={date} 
-                    onChange={(e) => setDate(e.target.value)} 
-                    className="bg-slate-50 rounded-xl pr-10 uppercase font-medium" 
+                  <Input
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="bg-slate-50 rounded-xl pr-12 uppercase font-medium"
                     placeholder="SELASA, 29 JULI 2025"
                   />
                   <div className="absolute right-3 flex items-center justify-center cursor-pointer">
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={parseIndonesianDate(date)}
                       onChange={(e) => {
                         if (e.target.value) {
                           setDate(formatIndonesianDate(e.target.value));
                         }
                       }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-6 h-6 z-10"
+                      className="absolute inset-0 opacity-0 cursor-pointer w-8 h-8 z-10"
                       style={{ colorScheme: 'light' }}
                     />
                     <Calendar size={18} className="text-slate-400 hover:text-orange-500 transition-colors pointer-events-none" />
                   </div>
                 </div>
               </div>
+
+              {/* Jam */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
                   <Clock size={12} className="text-slate-400" />
-                  Jam
+                  Jam Siaran
                 </label>
-                <div className="space-y-2">
-                  <Input 
-                    value={time} 
-                    onChange={(e) => setTime(e.target.value)} 
-                    className="bg-slate-50 rounded-xl font-medium" 
-                    placeholder="09:00 – 10:00 WIB"
+                {/* Time Range Picker */}
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
+                  <Clock size={16} className="text-slate-400 shrink-0" />
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setStartTime(val);
+                      setTime(`${val} – ${endTime} WIB`);
+                    }}
+                    className="bg-transparent text-slate-700 font-bold text-sm focus:outline-none cursor-pointer"
+                    style={{ colorScheme: 'light' }}
                   />
-                  
-                  {/* Time Range Selector */}
-                  <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs shadow-inner">
-                    <span className="text-slate-500 font-semibold ml-1">Mulai:</span>
-                    <input 
-                      type="time" 
-                      value={startTime}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setStartTime(val);
-                        setTime(`${val} – ${endTime} WIB`);
-                      }}
-                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                      style={{ colorScheme: 'light' }}
-                    />
-                    <span className="text-slate-400 font-medium">s/d</span>
-                    <input 
-                      type="time" 
-                      value={endTime}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEndTime(val);
-                        setTime(`${startTime} – ${val} WIB`);
-                      }}
-                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                      style={{ colorScheme: 'light' }}
-                    />
-                    <span className="text-slate-500 font-bold bg-slate-200/50 px-2 py-1 rounded-md">WIB</span>
-                  </div>
+                  <span className="text-slate-400 font-medium text-sm">–</span>
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEndTime(val);
+                      setTime(`${startTime} – ${val} WIB`);
+                    }}
+                    className="bg-transparent text-slate-700 font-bold text-sm focus:outline-none cursor-pointer"
+                    style={{ colorScheme: 'light' }}
+                  />
+                  <span className="text-slate-500 font-bold text-sm bg-slate-200 px-2 py-0.5 rounded-md ml-auto">WIB</span>
                 </div>
+                {/* Preview text */}
+                <p className="text-xs text-slate-400 ml-1">Preview: <span className="font-semibold text-slate-600">{time}</span></p>
               </div>
             </div>
 
