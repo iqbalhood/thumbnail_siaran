@@ -13,10 +13,79 @@ import {
   UserCircle2, 
   Image as ImageIcon, 
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
+
+// Helper to format Date string (YYYY-MM-DD) to Indonesian format (HARI, DD BULAN YYYY)
+const formatIndonesianDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const parts = dateString.split('-');
+  if (parts.length !== 3) return dateString;
+  
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  
+  const dateObj = new Date(year, month, day);
+  if (isNaN(dateObj.getTime())) return dateString;
+
+  const days = ['MINGGU', 'SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'];
+  const months = [
+    'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+    'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+  ];
+
+  const dayName = days[dateObj.getDay()];
+  const monthName = months[dateObj.getMonth()];
+
+  return `${dayName}, ${day} ${monthName} ${year}`;
+};
+
+// Helper to parse Indonesian date format back to YYYY-MM-DD for the native date input
+const parseIndonesianDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  try {
+    const cleanStr = dateStr.toUpperCase().replace(/,/g, '');
+    const parts = cleanStr.split(/\s+/);
+    
+    let dayStr = '';
+    let monthStr = '';
+    let yearStr = '';
+    
+    if (parts.length === 4) {
+      dayStr = parts[1];
+      monthStr = parts[2];
+      yearStr = parts[3];
+    } else if (parts.length === 3) {
+      dayStr = parts[0];
+      monthStr = parts[1];
+      yearStr = parts[2];
+    } else {
+      return '';
+    }
+    
+    const months = [
+      'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+      'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
+    ];
+    
+    const monthIndex = months.indexOf(monthStr);
+    if (monthIndex === -1) return '';
+    
+    const formattedDay = dayStr.padStart(2, '0');
+    const formattedMonth = String(monthIndex + 1).padStart(2, '0');
+    
+    if (!/^\d{4}$/.test(yearStr)) return '';
+    
+    return `${yearStr}-${formattedMonth}-${formattedDay}`;
+  } catch (e) {
+    return '';
+  }
+};
 
 export default function GeneratorPage() {
   const [presenters, setPresenters] = useState<any[]>([]);
@@ -30,10 +99,21 @@ export default function GeneratorPage() {
   const [eventName, setEventName] = useState('BANDA ACEH MENYAPA');
   const [date, setDate] = useState('SELASA, 29 JULI 2025');
   const [time, setTime] = useState('09:00 – 10:00 WIB');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('10:00');
   const [selectedPresenterId, setSelectedPresenterId] = useState<string>('');
   const [speakerCount, setSpeakerCount] = useState<number>(1);
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null]);
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
+
+  // Synchronize time picker when manually typing in time text field
+  useEffect(() => {
+    const match = time.match(/(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})/);
+    if (match) {
+      setStartTime(match[1]);
+      setEndTime(match[2]);
+    }
+  }, [time]);
 
   useEffect(() => {
     fetchInitialData();
@@ -140,12 +220,75 @@ export default function GeneratorPage() {
                 <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Tanggal</label>
-                <Input value={date} onChange={(e) => setDate(e.target.value)} className="bg-slate-50 rounded-xl" />
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1">
+                  <Calendar size={12} className="text-slate-400" />
+                  Tanggal
+                </label>
+                <div className="relative flex items-center">
+                  <Input 
+                    value={date} 
+                    onChange={(e) => setDate(e.target.value)} 
+                    className="bg-slate-50 rounded-xl pr-10 uppercase font-medium" 
+                    placeholder="SELASA, 29 JULI 2025"
+                  />
+                  <div className="absolute right-3 flex items-center justify-center cursor-pointer">
+                    <input 
+                      type="date" 
+                      value={parseIndonesianDate(date)}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setDate(formatIndonesianDate(e.target.value));
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-6 h-6 z-10"
+                      style={{ colorScheme: 'light' }}
+                    />
+                    <Calendar size={18} className="text-slate-400 hover:text-orange-500 transition-colors pointer-events-none" />
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Jam</label>
-                <Input value={time} onChange={(e) => setTime(e.target.value)} className="bg-slate-50 rounded-xl" />
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1">
+                  <Clock size={12} className="text-slate-400" />
+                  Jam
+                </label>
+                <div className="space-y-2">
+                  <Input 
+                    value={time} 
+                    onChange={(e) => setTime(e.target.value)} 
+                    className="bg-slate-50 rounded-xl font-medium" 
+                    placeholder="09:00 – 10:00 WIB"
+                  />
+                  
+                  {/* Time Range Selector */}
+                  <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs shadow-inner">
+                    <span className="text-slate-500 font-semibold ml-1">Mulai:</span>
+                    <input 
+                      type="time" 
+                      value={startTime}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setStartTime(val);
+                        setTime(`${val} – ${endTime} WIB`);
+                      }}
+                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                      style={{ colorScheme: 'light' }}
+                    />
+                    <span className="text-slate-400 font-medium">s/d</span>
+                    <input 
+                      type="time" 
+                      value={endTime}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEndTime(val);
+                        setTime(`${startTime} – ${val} WIB`);
+                      }}
+                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                      style={{ colorScheme: 'light' }}
+                    />
+                    <span className="text-slate-500 font-bold bg-slate-200/50 px-2 py-1 rounded-md">WIB</span>
+                  </div>
+                </div>
               </div>
             </div>
 
