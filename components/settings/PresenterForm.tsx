@@ -8,11 +8,11 @@ import { Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 
 interface PresenterFormProps {
   initialData?: {
-    id: string;
-    name: string;
-    background_url: string | null;
-    background_path: string | null;
-    dialog_id: string | null;
+    id?: string;
+    name?: string;
+    background_url?: string | null;
+    background_path?: string | null;
+    dialog_id?: string | null;
   };
   dialogs: Array<{ id: string; name: string }>;
   onSubmit: (data: any) => Promise<void>;

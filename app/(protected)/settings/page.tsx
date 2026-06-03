@@ -272,19 +272,75 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        {presenters.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {presenters.map((p) => (
-              <PresenterCard
-                key={p.id}
-                presenter={p}
-                onEdit={() => {
-                  setEditingPresenter(p);
-                  setIsModalOpen(true);
-                }}
-                onDelete={() => handleDeletePresenter(p.id, p.background_path)}
-              />
-            ))}
+        {dialogs.length > 0 ? (
+          <div className="space-y-8">
+            {dialogs.map((dialog) => {
+              const dialogPresenters = presenters.filter((p) => p.dialog_id === dialog.id);
+              return (
+                <div key={dialog.id} className="space-y-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                      <Mic2 size={14} className="text-orange-500" />
+                      {dialog.name}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setEditingPresenter({ dialog_id: dialog.id });
+                        setIsModalOpen(true);
+                      }}
+                      className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 hover:underline"
+                    >
+                      <Plus size={12} />
+                      Tambah Presenter
+                    </button>
+                  </div>
+
+                  {dialogPresenters.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {dialogPresenters.map((p) => (
+                        <PresenterCard
+                          key={p.id}
+                          presenter={p}
+                          onEdit={() => {
+                            setEditingPresenter(p);
+                            setIsModalOpen(true);
+                          }}
+                          onDelete={() => handleDeletePresenter(p.id, p.background_path)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center">
+                      <p className="text-xs text-slate-400 italic">Belum ada presenter untuk dialog ini.</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Orphan/Legacy Presenters Group */}
+            {presenters.filter((p) => !p.dialog_id).length > 0 && (
+              <div className="space-y-4 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    Tanpa Dialog (Legacy)
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {presenters.filter((p) => !p.dialog_id).map((p) => (
+                    <PresenterCard
+                      key={p.id}
+                      presenter={p}
+                      onEdit={() => {
+                        setEditingPresenter(p);
+                        setIsModalOpen(true);
+                      }}
+                      onDelete={() => handleDeletePresenter(p.id, p.background_path)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-3">
@@ -293,7 +349,7 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm font-bold text-slate-900">Belum ada presenter</p>
-              <p className="text-xs text-slate-500">Klik tombol "Tambah Presenter" untuk mulai.</p>
+              <p className="text-xs text-slate-500">Buat dialog terlebih dahulu untuk mulai menambahkan presenter.</p>
             </div>
           </div>
         )}
