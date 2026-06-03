@@ -334,6 +334,7 @@ export default function SettingsPage() {
       >
         <PresenterForm
           initialData={editingPresenter}
+          dialogs={dialogs}
           onCancel={() => setIsModalOpen(false)}
           onSubmit={handlePresenterSubmit}
         />
