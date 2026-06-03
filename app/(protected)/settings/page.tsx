@@ -8,12 +8,14 @@ import { PresenterForm } from '@/components/settings/PresenterForm';
 import { DialogForm } from '@/components/settings/DialogForm';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone } from 'lucide-react';
 
 export default function SettingsPage() {
   const [branding, setBranding] = useState<any>(null);
   const [presenters, setPresenters] = useState<any[]>([]);
   const [dialogs, setDialogs] = useState<any[]>([]);
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
   // Modal states
@@ -35,6 +37,7 @@ export default function SettingsPage() {
         .select('*')
         .single();
       setBranding(bData);
+      setPhoneNumber((bData as any)?.phone_number || '0811 6881 2123');
 
       // Fetch presenters
       const { data: pData } = await supabase
@@ -68,6 +71,10 @@ export default function SettingsPage() {
     } catch (error: any) {
       alert(`Gagal update branding: ${error.message}`);
     }
+  };
+
+  const handleSavePhone = async () => {
+    await updateBranding({ phone_number: phoneNumber });
   };
 
   const handlePresenterSubmit = async (data: any) => {
@@ -189,7 +196,40 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* B. Dialog Section */}
+      {/* B. Contact Info Section */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-900">Informasi Kontak</h2>
+          <div className="h-px flex-1 bg-slate-100" />
+        </div>
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+          <div className="space-y-2 max-w-md">
+            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Phone size={16} className="text-slate-400" />
+              Nomor Info Promosi & Kerjasama
+            </label>
+            <div className="flex gap-3">
+              <Input
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="0811 6881 2123"
+                className="bg-slate-50 rounded-xl"
+              />
+              <Button 
+                onClick={handleSavePhone} 
+                className="bg-slate-900 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 whitespace-nowrap"
+              >
+                Simpan
+              </Button>
+            </div>
+            <p className="text-[11px] text-slate-400 italic ml-1">
+              Nomor ini akan tampil di bagian bawah thumbnail promosi.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* C. Dialog Section */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
