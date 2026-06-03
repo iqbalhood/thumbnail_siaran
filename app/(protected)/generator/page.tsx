@@ -15,7 +15,8 @@ import {
   Sparkles,
   RefreshCw,
   Calendar,
-  Clock
+  Clock,
+  Mic2
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
@@ -88,7 +89,8 @@ const parseIndonesianDate = (dateStr: string): string => {
 };
 
 export default function GeneratorPage() {
-  const [presenters, setPresenters] = useState<any[]>([]);
+  const [dialogs, setDialogs] = useState<any[]>([]);
+  const [allPresenters, setAllPresenters] = useState<any[]>([]);
   const [speakers, setSpeakers] = useState<any[]>([]);
   const [branding, setBranding] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +99,7 @@ export default function GeneratorPage() {
   // Form State
   const [title, setTitle] = useState('SEKOLAH RAKYAT DI ACEH:\nMENJAWAB TANTANGAN PENDIDIKAN PINGGIRAN');
   const [eventName, setEventName] = useState('BANDA ACEH MENYAPA');
+  const [selectedDialogId, setSelectedDialogId] = useState<string>('');
   const [date, setDate] = useState(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -113,6 +116,11 @@ export default function GeneratorPage() {
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
+  // Presenters filtered by selected dialog
+  const presenters = allPresenters.filter((p) => 
+    selectedDialogId ? p.dialog_id === selectedDialogId : true
+  );
+
   // Synchronize time picker when manually typing in time text field
   useEffect(() => {
     const match = time.match(/(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})/);
@@ -126,21 +134,48 @@ export default function GeneratorPage() {
     fetchInitialData();
   }, []);
 
+  // When dialog changes, auto-select first presenter and set eventName
+  useEffect(() => {
+    if (!selectedDialogId) return;
+    const dialog = dialogs.find((d) => d.id === selectedDialogId);
+    if (dialog) {
+      setEventName(dialog.name);
+    }
+    const dialogPresenters = allPresenters.filter((p) => p.dialog_id === selectedDialogId);
+    if (dialogPresenters.length > 0) {
+      setSelectedPresenterId(dialogPresenters[0].id);
+    } else {
+      setSelectedPresenterId('');
+    }
+  }, [selectedDialogId, allPresenters, dialogs]);
+
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      const [pRes, sRes, bRes] = await Promise.all([
+      const [dRes, pRes, sRes, bRes] = await Promise.all([
+        supabase.from('dialogs').select('*').order('name'),
         supabase.from('presenters').select('*').order('name'),
         supabase.from('speakers').select('*').order('full_name'),
         supabase.from('branding_settings').select('*').single(),
       ]);
 
-      setPresenters(pRes.data || []);
+      const fetchedDialogs = (dRes.data || []) as any[];
+      const fetchedPresenters = (pRes.data || []) as any[];
+
+      setDialogs(fetchedDialogs);
+      setAllPresenters(fetchedPresenters);
       setSpeakers(sRes.data || []);
       setBranding(bRes.data);
 
-      if (pRes.data && pRes.data.length > 0) {
-        setSelectedPresenterId((pRes.data as any)[0].id);
+      // Auto-select first dialog
+      if (fetchedDialogs.length > 0) {
+        setSelectedDialogId(fetchedDialogs[0].id);
+        setEventName(fetchedDialogs[0].name);
+      }
+
+      // If no dialogs exist yet, fallback to first presenter
+      if (fetchedDialogs.length === 0 && fetchedPresenters.length > 0) {
+        setSelectedPresenterId(fetchedPresenters[0].id);
       }
     } catch (error) {
       console.error('Error fetching generator data:', error);
@@ -149,7 +184,7 @@ export default function GeneratorPage() {
     }
   };
 
-  const selectedPresenter = presenters.find((p) => p.id === selectedPresenterId);
+  const selectedPresenter = allPresenters.find((p) => p.id === selectedPresenterId);
   
   // Resolve speakers for the preview
   const resolvedSpeakers = selectedSpeakerIds.slice(0, speakerCount).map((id) => {
@@ -220,12 +255,33 @@ export default function GeneratorPage() {
               />
             </div>
 
-            {/* 2. Nama Acara, Tanggal, Jam */}
+            {/* 2. Dialog, Tanggal, Jam */}
             <div className="space-y-4">
-              {/* Nama Acara */}
+              {/* Pilih Dialog */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Acara</label>
-                <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" />
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                  <Mic2 size={12} className="text-slate-400" />
+                  Nama Acara / Dialog
+                </label>
+                {dialogs.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {dialogs.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => setSelectedDialogId(d.id)}
+                        className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 ${
+                          selectedDialogId === d.id
+                            ? 'border-orange-500 bg-orange-50 text-orange-700 ring-4 ring-orange-500/10'
+                            : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
+                        }`}
+                      >
+                        {d.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" placeholder="Nama acara..." />
+                )}
               </div>
 
               {/* Tanggal */}
