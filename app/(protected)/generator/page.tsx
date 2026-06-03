@@ -496,6 +496,7 @@ export default function GeneratorPage() {
                 rriLogoUrl: branding?.rri_logo_url || null,
                 pro1LogoUrl: branding?.pro1_logo_url || null,
                 speakerSpacingOffset,
+                phoneNumber: branding?.phone_number || '0811 6881 2123',
               }}
             />
           </div>

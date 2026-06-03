@@ -34,6 +34,7 @@ export interface ThumbnailData {
   rriLogoUrl: string | null;
   pro1LogoUrl: string | null;
   speakerSpacingOffset?: number;
+  phoneNumber?: string;
 }
 
 interface ThumbnailPreviewProps {
@@ -52,6 +53,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     rriLogoUrl,
     pro1LogoUrl,
     speakerSpacingOffset = 0,
+    phoneNumber = '0811 6881 2123',
   } = data;  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
     1: { positions: [{ x: 160, y: 405 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
@@ -272,7 +274,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             fontSize="16"
             fontWeight="700"
           >
-            0811 6881 2123
+            {phoneNumber}
           </text>
         </g>
       </svg>
