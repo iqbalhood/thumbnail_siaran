@@ -112,7 +112,7 @@ export default function GeneratorPage() {
   const [endTime, setEndTime] = useState('10:00');
   const [selectedPresenterId, setSelectedPresenterId] = useState<string>('');
   const [speakerCount, setSpeakerCount] = useState<number>(1);
-  const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null]);
+  const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null, null]);
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -404,7 +404,7 @@ export default function GeneratorPage() {
                   Jumlah Pembicara
                 </label>
                 <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                  {[1, 2, 3, 4].map((n) => (
+                  {[1, 2, 3, 4, 5].map((n) => (
                     <button
                       key={n}
                       onClick={() => setSpeakerCount(n)}

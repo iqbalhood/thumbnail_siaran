@@ -60,9 +60,10 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     2: { positions: [{ x: 150, y: 405 }, { x: 410, y: 405 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
     3: { positions: [{ x: 145, y: 405 }, { x: 365, y: 405 }, { x: 585, y: 405 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
     4: { positions: [{ x: 135, y: 405 }, { x: 335, y: 405 }, { x: 535, y: 405 }, { x: 735, y: 405 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
+    5: { positions: [{ x: 120, y: 405 }, { x: 290, y: 405 }, { x: 460, y: 405 }, { x: 630, y: 405 }, { x: 800, y: 405 }], circleR: 48, textWidth: 140, fontSize: 12, posFontSize: 9 },
   };
 
-  const count = Math.min(Math.max(speakers.length, 1), 4);
+  const count = Math.min(Math.max(speakers.length, 1), 5);
   const layout = speakerLayouts[count];
   const speakerY = 405;
 
@@ -156,7 +157,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
 
         {/* 8. Speaker Circles (Y-anchor: 380) */}
         {speakers.length > 0 ? (
-          speakers.slice(0, 4).map((speaker, i) => {
+          speakers.slice(0, 5).map((speaker, i) => {
             const pos = layout.positions[i];
             const currentX = pos.x + (i * speakerSpacingOffset);
             const r = layout.circleR;
