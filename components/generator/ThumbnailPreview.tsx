@@ -35,6 +35,7 @@ export interface ThumbnailData {
   programLogoUrl: string | null;
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
+  eventInfoYOffset?: number;
   phoneNumber?: string;
 }
 
@@ -55,6 +56,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     programLogoUrl,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
+    eventInfoYOffset = 0,
     phoneNumber = '0811 6881 2123',
   } = data;  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
@@ -113,7 +115,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {/* 5. Event Name */}
         <text
           x="80"
-          y="295"
+          y={295 + eventInfoYOffset}
           fill="white"
           fontFamily="Inter, sans-serif"
           fontSize="22"
@@ -124,7 +126,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         </text>
 
         {/* 6. Date with Calendar Icon */}
-        <g transform="translate(420, 275)">
+        <g transform={`translate(420, ${275 + eventInfoYOffset})`}>
           <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <path d="M16 2V6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <path d="M8 2V6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -142,7 +144,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         </g>
 
         {/* 7. Time with Clock Icon */}
-        <g transform="translate(750, 273)">
+        <g transform={`translate(750, ${273 + eventInfoYOffset})`}>
           <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
           <path d="M12 6V12L16 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           <text

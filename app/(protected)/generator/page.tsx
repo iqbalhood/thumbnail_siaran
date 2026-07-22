@@ -115,6 +115,7 @@ export default function GeneratorPage() {
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null, null]);
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
   const [speakerYOffset, setSpeakerYOffset] = useState<number>(0);
+  const [eventInfoYOffset, setEventInfoYOffset] = useState<number>(0);
   const [selectedProgram, setSelectedProgram] = useState<'PRO 1' | 'PRO 2' | 'PRO 4'>('PRO 1');
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -496,6 +497,25 @@ export default function GeneratorPage() {
                   className="w-full accent-orange-500"
                 />
               </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                    <span className="text-slate-400">↕️</span>
+                    Jarak Vertikal Info Acara (Atas/Bawah)
+                  </label>
+                  <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{eventInfoYOffset > 0 ? `+${eventInfoYOffset}` : eventInfoYOffset} px</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="-150" 
+                  max="150" 
+                  step="5"
+                  value={eventInfoYOffset} 
+                  onChange={(e) => setEventInfoYOffset(Number(e.target.value))}
+                  className="w-full accent-orange-500"
+                />
+              </div>
             </div>
 
             <div className="pt-4">
@@ -545,6 +565,7 @@ export default function GeneratorPage() {
                                 (branding?.pro1_logo_url || null),
                 speakerSpacingOffset,
                 speakerYOffset,
+                eventInfoYOffset,
                 phoneNumber: branding?.phone_number || '0811 6881 2123',
               }}
             />
