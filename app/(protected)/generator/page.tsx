@@ -114,6 +114,7 @@ export default function GeneratorPage() {
   const [speakerCount, setSpeakerCount] = useState<number>(1);
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null, null]);
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
+  const [speakerYOffset, setSpeakerYOffset] = useState<number>(0);
   const [selectedProgram, setSelectedProgram] = useState<'PRO 1' | 'PRO 2' | 'PRO 4'>('PRO 1');
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -455,26 +456,47 @@ export default function GeneratorPage() {
             </div>
 
             {/* 5. Atur Jarak Pembicara */}
-            {speakerCount > 1 && (
+            <div className="space-y-6 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+              {speakerCount > 1 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                      <span className="text-slate-400">↔️</span>
+                      Jarak Antar Pembicara (Horizontal)
+                    </label>
+                    <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{speakerSpacingOffset > 0 ? `+${speakerSpacingOffset}` : speakerSpacingOffset} px</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="-100" 
+                    max="100" 
+                    step="5"
+                    value={speakerSpacingOffset} 
+                    onChange={(e) => setSpeakerSpacingOffset(Number(e.target.value))}
+                    className="w-full accent-orange-500"
+                  />
+                </div>
+              )}
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                    <span className="text-slate-400">↔️</span>
-                    Jarak Antar Pembicara
+                    <span className="text-slate-400">↕️</span>
+                    Jarak Vertikal Foto (Atas/Bawah)
                   </label>
-                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{speakerSpacingOffset > 0 ? `+${speakerSpacingOffset}` : speakerSpacingOffset} px</span>
+                  <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{speakerYOffset > 0 ? `+${speakerYOffset}` : speakerYOffset} px</span>
                 </div>
                 <input 
                   type="range" 
-                  min="-100" 
-                  max="100" 
+                  min="-150" 
+                  max="150" 
                   step="5"
-                  value={speakerSpacingOffset} 
-                  onChange={(e) => setSpeakerSpacingOffset(Number(e.target.value))}
+                  value={speakerYOffset} 
+                  onChange={(e) => setSpeakerYOffset(Number(e.target.value))}
                   className="w-full accent-orange-500"
                 />
               </div>
-            )}
+            </div>
 
             <div className="pt-4">
               <Button
@@ -522,6 +544,7 @@ export default function GeneratorPage() {
                                 selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
                                 (branding?.pro1_logo_url || null),
                 speakerSpacingOffset,
+                speakerYOffset,
                 phoneNumber: branding?.phone_number || '0811 6881 2123',
               }}
             />
