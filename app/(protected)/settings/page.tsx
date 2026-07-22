@@ -176,7 +176,7 @@ export default function SettingsPage() {
           <h2 className="text-lg font-bold text-slate-900">Logo Header</h2>
           <div className="h-px flex-1 bg-slate-100" />
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <LogoUpload
             label="Logo RRI Banda Aceh"
             currentUrl={branding?.rri_logo_url}
@@ -192,6 +192,22 @@ export default function SettingsPage() {
             bucket="logos"
             onUploadSuccess={(url, path) => updateBranding({ pro1_logo_url: url, pro1_logo_path: path })}
             onDeleteSuccess={() => updateBranding({ pro1_logo_url: null, pro1_logo_path: null })}
+          />
+          <LogoUpload
+            label="Logo PRO 2 92.6 FM"
+            currentUrl={branding?.pro2_logo_url}
+            currentPath={branding?.pro2_logo_path}
+            bucket="logos"
+            onUploadSuccess={(url, path) => updateBranding({ pro2_logo_url: url, pro2_logo_path: path })}
+            onDeleteSuccess={() => updateBranding({ pro2_logo_url: null, pro2_logo_path: null })}
+          />
+          <LogoUpload
+            label="Logo PRO 4 87.6 FM"
+            currentUrl={branding?.pro4_logo_url}
+            currentPath={branding?.pro4_logo_path}
+            bucket="logos"
+            onUploadSuccess={(url, path) => updateBranding({ pro4_logo_url: url, pro4_logo_path: path })}
+            onDeleteSuccess={() => updateBranding({ pro4_logo_url: null, pro4_logo_path: null })}
           />
         </div>
       </section>

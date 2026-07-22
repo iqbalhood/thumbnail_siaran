@@ -114,6 +114,7 @@ export default function GeneratorPage() {
   const [speakerCount, setSpeakerCount] = useState<number>(1);
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null, null]);
   const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
+  const [selectedProgram, setSelectedProgram] = useState<'PRO 1' | 'PRO 2' | 'PRO 4'>('PRO 1');
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Presenters filtered by selected dialog
@@ -358,6 +359,29 @@ export default function GeneratorPage() {
                 {/* Preview text */}
                 <p className="text-xs text-slate-400 ml-1">Preview: <span className="font-semibold text-slate-600">{time}</span></p>
               </div>
+
+              {/* Pilih Programa */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                  <Mic2 size={12} className="text-slate-400" />
+                  Pilih Programa
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['PRO 1', 'PRO 2', 'PRO 4'] as const).map((prog) => (
+                    <button
+                      key={prog}
+                      onClick={() => setSelectedProgram(prog)}
+                      className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 ${
+                        selectedProgram === prog
+                          ? 'border-orange-500 bg-orange-50 text-orange-700 ring-4 ring-orange-500/10'
+                          : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
+                      }`}
+                    >
+                      {prog}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* 3. Pilih Presenter (Background) */}
@@ -494,7 +518,9 @@ export default function GeneratorPage() {
                 presenterBgUrl: selectedPresenter?.background_url || null,
                 speakers: resolvedSpeakers,
                 rriLogoUrl: branding?.rri_logo_url || null,
-                pro1LogoUrl: branding?.pro1_logo_url || null,
+                programLogoUrl: selectedProgram === 'PRO 2' ? (branding?.pro2_logo_url || null) : 
+                                selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
+                                (branding?.pro1_logo_url || null),
                 speakerSpacingOffset,
                 phoneNumber: branding?.phone_number || '0811 6881 2123',
               }}

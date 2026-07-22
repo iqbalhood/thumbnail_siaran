@@ -32,7 +32,7 @@ export interface ThumbnailData {
   presenterBgUrl: string | null;
   speakers: SpeakerData[];
   rriLogoUrl: string | null;
-  pro1LogoUrl: string | null;
+  programLogoUrl: string | null;
   speakerSpacingOffset?: number;
   phoneNumber?: string;
 }
@@ -51,7 +51,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     presenterBgUrl,
     speakers = [],
     rriLogoUrl,
-    pro1LogoUrl,
+    programLogoUrl,
     speakerSpacingOffset = 0,
     phoneNumber = '0811 6881 2123',
   } = data;  // Left-aligned speaker layouts starting from x=80
@@ -88,9 +88,9 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           <image href={rriLogoUrl} x="80" y="50" width="140" height="70" preserveAspectRatio="xMinYMid meet" />
         )}
 
-        {/* 3. Logo PRO 1 */}
-        {pro1LogoUrl && (
-          <image href={pro1LogoUrl} x="1080" y="45" width="140" height="70" preserveAspectRatio="xMaxYMid meet" />
+        {/* 3. Logo Program (PRO 1 / PRO 2 / PRO 4) */}
+        {programLogoUrl && (
+          <image href={programLogoUrl} x="1080" y="45" width="140" height="70" preserveAspectRatio="xMaxYMid meet" />
         )}
 
         {/* 4. Title */}

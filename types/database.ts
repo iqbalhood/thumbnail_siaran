@@ -43,6 +43,10 @@ export type Database = {
           rri_logo_path: string | null;
           pro1_logo_url: string | null;
           pro1_logo_path: string | null;
+          pro2_logo_url: string | null;
+          pro2_logo_path: string | null;
+          pro4_logo_url: string | null;
+          pro4_logo_path: string | null;
           updated_at: string;
         };
         Insert: Omit<Database['public']['Tables']['branding_settings']['Row'], 'updated_at'>;
