@@ -56,7 +56,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     phoneNumber = '0811 6881 2123',
   } = data;  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
-    1: { positions: [{ x: 160, y: 405 }], circleR: 80, textWidth: 240, fontSize: 16, posFontSize: 12 },
+    1: { positions: [{ x: 180, y: 405 }], circleR: 90, textWidth: 600, fontSize: 32, posFontSize: 20 },
     2: { positions: [{ x: 150, y: 405 }, { x: 410, y: 405 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
     3: { positions: [{ x: 145, y: 405 }, { x: 365, y: 405 }, { x: 585, y: 405 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
     4: { positions: [{ x: 135, y: 405 }, { x: 335, y: 405 }, { x: 535, y: 405 }, { x: 735, y: 405 }], circleR: 55, textWidth: 160, fontSize: 13, posFontSize: 10 },
@@ -189,10 +189,10 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   <circle cx={currentX} cy={pos.y} r={r} fill="#1e293b" />
                 )}
                 
-                {/* Name - Left Aligned (Issue Fix) */}
+                {/* Name */}
                 <text
-                  x={currentX - r}
-                  y={pos.y + r + 28}
+                  x={count === 1 ? currentX + r + 30 : currentX - r}
+                  y={count === 1 ? pos.y - 5 : pos.y + r + 28}
                   fill="white"
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
@@ -204,8 +204,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                 
                 {/* Position - SVG text with manual wrap */}
                 <text
-                  x={currentX - r}
-                  y={pos.y + r + 58}
+                  x={count === 1 ? currentX + r + 30 : currentX - r}
+                  y={count === 1 ? pos.y + 35 : pos.y + r + 58}
                   fill="white"
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.posFontSize}
@@ -213,7 +213,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   textAnchor="start"
                 >
                   {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 4).map((line, li) => (
-                    <tspan key={li} x={currentX - r} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
+                    <tspan key={li} x={count === 1 ? currentX + r + 30 : currentX - r} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
                   ))}
                 </text>
               </g>
