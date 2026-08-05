@@ -108,7 +108,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
 
         {/* 3.5 Logo HUT RI (Shown in August if available) */}
         {isAugust && hutRiLogoUrl && (
-          <image href={hutRiLogoUrl} x="760" y="45" width="300" height="70" preserveAspectRatio="xMaxYMid meet" />
+          <image href={hutRiLogoUrl} x="720" y="25" width="340" height="110" preserveAspectRatio="xMaxYMid meet" />
         )}
 
         {/* 4. Title */}
