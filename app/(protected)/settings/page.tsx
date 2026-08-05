@@ -176,7 +176,7 @@ export default function SettingsPage() {
           <h2 className="text-lg font-bold text-slate-900">Logo Header</h2>
           <div className="h-px flex-1 bg-slate-100" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           <LogoUpload
             label="Logo RRI Banda Aceh"
             currentUrl={branding?.rri_logo_url}
@@ -208,6 +208,14 @@ export default function SettingsPage() {
             bucket="logos"
             onUploadSuccess={(url, path) => updateBranding({ pro4_logo_url: url, pro4_logo_path: path })}
             onDeleteSuccess={() => updateBranding({ pro4_logo_url: null, pro4_logo_path: null })}
+          />
+          <LogoUpload
+            label="Logo HUT RI (Agustus)"
+            currentUrl={branding?.hut_ri_logo_url}
+            currentPath={branding?.hut_ri_logo_path}
+            bucket="logos"
+            onUploadSuccess={(url, path) => updateBranding({ hut_ri_logo_url: url, hut_ri_logo_path: path })}
+            onDeleteSuccess={() => updateBranding({ hut_ri_logo_url: null, hut_ri_logo_path: null })}
           />
         </div>
       </section>

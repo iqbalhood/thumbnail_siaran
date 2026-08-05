@@ -47,6 +47,8 @@ export type Database = {
           pro2_logo_path: string | null;
           pro4_logo_url: string | null;
           pro4_logo_path: string | null;
+          hut_ri_logo_url: string | null;
+          hut_ri_logo_path: string | null;
           updated_at: string;
         };
         Insert: Omit<Database['public']['Tables']['branding_settings']['Row'], 'updated_at'>;

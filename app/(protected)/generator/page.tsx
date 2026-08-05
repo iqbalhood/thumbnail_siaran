@@ -583,6 +583,7 @@ export default function GeneratorPage() {
                 programLogoUrl: selectedProgram === 'PRO 2' ? (branding?.pro2_logo_url || null) : 
                                 selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
                                 (branding?.pro1_logo_url || null),
+                hutRiLogoUrl: branding?.hut_ri_logo_url || null,
                 speakerSpacingOffset,
                 speakerYOffset,
                 eventInfoYOffset,

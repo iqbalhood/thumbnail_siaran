@@ -33,6 +33,7 @@ export interface ThumbnailData {
   speakers: SpeakerData[];
   rriLogoUrl: string | null;
   programLogoUrl: string | null;
+  hutRiLogoUrl?: string | null;
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
   eventInfoYOffset?: number;
@@ -55,12 +56,18 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     speakers = [],
     rriLogoUrl,
     programLogoUrl,
+    hutRiLogoUrl,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
-  } = data;  // Left-aligned speaker layouts starting from x=80
+  } = data;
+  
+  // Check if date contains AGUSTUS
+  const isAugust = date.toUpperCase().includes('AGUSTUS');
+
+  // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
     1: { positions: [{ x: 180, y: 405 }], circleR: 90, textWidth: 600, fontSize: 32, posFontSize: 20 },
     2: { positions: [{ x: 150, y: 405 }, { x: 410, y: 405 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
@@ -97,6 +104,11 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {/* 3. Logo Program (PRO 1 / PRO 2 / PRO 4) */}
         {programLogoUrl && (
           <image href={programLogoUrl} x="1080" y="45" width="140" height="70" preserveAspectRatio="xMaxYMid meet" />
+        )}
+
+        {/* 3.5 Logo HUT RI (Shown in August if available) */}
+        {isAugust && hutRiLogoUrl && (
+          <image href={hutRiLogoUrl} x="930" y="45" width="140" height="70" preserveAspectRatio="xMaxYMid meet" />
         )}
 
         {/* 4. Title */}
