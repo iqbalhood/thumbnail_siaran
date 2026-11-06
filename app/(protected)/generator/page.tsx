@@ -118,6 +118,25 @@ const COLOR_PRESETS = [
   { name: 'Merah', hex: '#F87171' },
 ];
 
+const ADMIN_EMAILS = [
+  'iqbalrri25@gmail.com',
+];
+
+const checkIsUserAdmin = (user: any): boolean => {
+  if (!user) return false;
+  const email = (user.email || '').toLowerCase().trim();
+  const userMeta = (user.user_metadata || {}) as any;
+  const appMeta = (user.app_metadata || {}) as any;
+  
+  return (
+    ADMIN_EMAILS.includes(email) ||
+    email.includes('admin') ||
+    userMeta.role === 'admin' ||
+    appMeta.role === 'admin' ||
+    userMeta.is_admin === true
+  );
+};
+
 export default function GeneratorPage() {
   const [dialogs, setDialogs] = useState<any[]>([]);
   const [allPresenters, setAllPresenters] = useState<any[]>([]);
@@ -171,10 +190,6 @@ export default function GeneratorPage() {
   // Admin & Thumbnail Settings states
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [adminUnlocked, setAdminUnlocked] = useState<boolean>(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [adminPinInput, setAdminPinInput] = useState('');
-  const [adminPinError, setAdminPinError] = useState<string | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
@@ -236,17 +251,7 @@ export default function GeneratorPage() {
         const { data: authData } = await supabase.auth.getUser();
         const user = authData?.user || null;
         setCurrentUser(user);
-        if (user) {
-          const email = (user.email || '').toLowerCase();
-          const userMeta = (user.user_metadata || {}) as any;
-          const appMeta = (user.app_metadata || {}) as any;
-          const isUserAdmin = 
-            userMeta.role === 'admin' ||
-            appMeta.role === 'admin' ||
-            userMeta.is_admin === true ||
-            email.includes('admin');
-          setIsAdmin(Boolean(isUserAdmin));
-        }
+        setIsAdmin(checkIsUserAdmin(user));
       } catch (authErr) {
         console.warn('Auth user fetch note:', authErr);
       }
@@ -289,11 +294,9 @@ export default function GeneratorPage() {
     }
   };
 
-  const effectiveIsAdmin = isAdmin || adminUnlocked;
-
   const handleSaveThumbnailSettings = async () => {
-    if (!effectiveIsAdmin) {
-      setIsAdminModalOpen(true);
+    if (!isAdmin) {
+      alert('Hanya akun Admin yang memiliki akses untuk menyimpan settingan thumbnail.');
       return;
     }
 
@@ -345,23 +348,6 @@ export default function GeneratorPage() {
       alert(`Gagal menyimpan settingan thumbnail: ${err.message}`);
     } finally {
       setIsSavingSettings(false);
-    }
-  };
-
-  const handleUnlockAdmin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const pin = adminPinInput.trim().toLowerCase();
-    if (pin === 'admin123' || pin === 'admin' || pin === 'rriadmin') {
-      setAdminUnlocked(true);
-      setIsAdminModalOpen(false);
-      setAdminPinInput('');
-      setAdminPinError(null);
-      // Auto-trigger save after unlocking
-      setTimeout(() => {
-        handleSaveThumbnailSettings();
-      }, 150);
-    } else {
-      setAdminPinError('Kode PIN / sandi admin salah. Silakan coba lagi.');
     }
   };
 
@@ -1267,59 +1253,47 @@ export default function GeneratorPage() {
               </div>
             </div>
 
-            {/* Settingan Default Template Card */}
-            <div className="bg-slate-900 text-white p-5 rounded-3xl space-y-3.5 shadow-xl shadow-slate-900/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={16} className="text-orange-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                    Settingan Template Default
-                  </span>
-                </div>
-                {effectiveIsAdmin ? (
+            {/* Settingan Default Template Card (Hanya Tampil di Akun Admin) */}
+            {isAdmin && (
+              <div className="bg-slate-900 text-white p-5 rounded-3xl space-y-3.5 shadow-xl shadow-slate-900/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-orange-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                      Settingan Template Default
+                    </span>
+                  </div>
                   <span className="text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                     <ShieldCheck size={11} /> Admin
                   </span>
-                ) : (
-                  <span className="text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <Lock size={11} /> Khusus Admin
-                  </span>
-                )}
-              </div>
-
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Simpan konfigurasi saat ini (posisi logo, warna teks, format, dan jarak) sebagai template default thumbnail untuk seluruh tim.
-              </p>
-
-              {saveSuccessMsg && (
-                <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 font-medium">
-                  <Check size={14} className="text-emerald-400 shrink-0" />
-                  <span>{saveSuccessMsg}</span>
                 </div>
-              )}
 
-              <Button
-                type="button"
-                onClick={handleSaveThumbnailSettings}
-                disabled={isSavingSettings}
-                className={`w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
-                  effectiveIsAdmin
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20'
-                    : 'bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700'
-                }`}
-              >
-                {isSavingSettings ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : effectiveIsAdmin ? (
-                  <Save size={15} />
-                ) : (
-                  <Lock size={15} className="text-orange-400" />
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Simpan konfigurasi saat ini (posisi logo, nama acara, warna teks, format, dan jarak) sebagai template default thumbnail untuk seluruh tim.
+                </p>
+
+                {saveSuccessMsg && (
+                  <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 font-medium">
+                    <Check size={14} className="text-emerald-400 shrink-0" />
+                    <span>{saveSuccessMsg}</span>
+                  </div>
                 )}
-                <span>
-                  {effectiveIsAdmin ? 'Simpan Settingan Thumbnail' : 'Simpan Settingan (Khusus Admin)'}
-                </span>
-              </Button>
-            </div>
+
+                <Button
+                  type="button"
+                  onClick={handleSaveThumbnailSettings}
+                  disabled={isSavingSettings}
+                  className="w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
+                >
+                  {isSavingSettings ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Save size={15} />
+                  )}
+                  <span>Simpan Settingan Thumbnail</span>
+                </Button>
+              </div>
+            )}
 
             <div className="pt-4 space-y-2.5">
               <Button
@@ -1396,20 +1370,19 @@ export default function GeneratorPage() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSaveThumbnailSettings}
-                disabled={isSavingSettings}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  effectiveIsAdmin
-                    ? 'bg-white hover:bg-orange-50 text-orange-600 border-orange-200 shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-200'
-                }`}
-                title={effectiveIsAdmin ? 'Simpan settingan generator saat ini sebagai default' : 'Hanya admin yang bisa simpan settingan default'}
-              >
-                {effectiveIsAdmin ? <Save size={13} /> : <Lock size={13} />}
-                <span>Simpan Default</span>
-              </button>
+              {/* Tombol Simpan Default (Hanya Muncul di Akun Admin) */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleSaveThumbnailSettings}
+                  disabled={isSavingSettings}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-orange-200 bg-white hover:bg-orange-50 text-orange-600 shadow-xs transition-all"
+                  title="Simpan settingan generator saat ini sebagai default template tim"
+                >
+                  <Save size={13} />
+                  <span>Simpan Default</span>
+                </button>
+              )}
 
               <button 
                 onClick={fetchInitialData}
@@ -1446,72 +1419,6 @@ export default function GeneratorPage() {
         </div>
 
       </div>
-
-      {/* Modal Verifikasi Hak Akses Admin */}
-      <Modal
-        isOpen={isAdminModalOpen}
-        onClose={() => {
-          setIsAdminModalOpen(false);
-          setAdminPinError(null);
-        }}
-        title="Verifikasi Hak Akses Admin"
-      >
-        <form onSubmit={handleUnlockAdmin} className="space-y-4">
-          <div className="flex items-start gap-3 p-3.5 bg-orange-50 border border-orange-200/80 rounded-2xl">
-            <div className="p-2 bg-orange-100 rounded-xl text-orange-600 shrink-0">
-              <Lock size={18} />
-            </div>
-            <div className="text-xs space-y-1 text-slate-700">
-              <p className="font-bold text-slate-900">Khusus Administrator</p>
-              <p className="text-slate-500 leading-relaxed">
-                Hanya akun Admin yang berwenang menyimpan konfigurasi default template thumbnail & poster untuk seluruh tim.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-              <KeyRound size={13} className="text-slate-400" />
-              Masukkan PIN / Sandi Admin
-            </label>
-            <Input
-              type="password"
-              placeholder="Masukkan sandi admin..."
-              value={adminPinInput}
-              onChange={(e) => {
-                setAdminPinInput(e.target.value);
-                setAdminPinError(null);
-              }}
-              className="bg-slate-50 rounded-xl"
-              autoFocus
-            />
-            {adminPinError && (
-              <p className="text-xs font-semibold text-red-500 ml-1">{adminPinError}</p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsAdminModalOpen(false);
-                setAdminPinError(null);
-              }}
-              className="text-xs font-bold"
-            >
-              Batal
-            </Button>
-            <Button
-              type="submit"
-              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold flex items-center gap-2"
-            >
-              <ShieldCheck size={14} />
-              Verifikasi & Simpan
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </main>
   );
 }
