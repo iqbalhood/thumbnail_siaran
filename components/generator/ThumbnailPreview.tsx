@@ -41,6 +41,8 @@ export interface ThumbnailData {
   titleColor?: string;
   infoColor?: string;
   speakerColor?: string;
+  titleXOffset?: number;
+  titleYOffset?: number;
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
   eventInfoYOffset?: number;
@@ -71,6 +73,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     titleColor = '#FFFFFF',
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
+    titleXOffset = 0,
+    titleYOffset = 0,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     eventInfoYOffset = 0,
@@ -180,8 +184,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
 
         {/* 4. Title */}
         <text
-          x="80"
-          y="180"
+          x={80 + titleXOffset}
+          y={180 + titleYOffset}
           fill={titleColor}
           fontFamily="Space Grotesk, sans-serif"
           fontSize="36"
@@ -189,7 +193,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           textAnchor="start"
         >
           {title.toUpperCase().split('\n').map((line, i) => (
-            <tspan x="80" dy={i === 0 ? 0 : 50} key={i}>{line}</tspan>
+            <tspan x={80 + titleXOffset} dy={i === 0 ? 0 : 50} key={i}>{line}</tspan>
           ))}
         </text>
 

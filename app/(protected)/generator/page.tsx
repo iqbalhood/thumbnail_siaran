@@ -34,7 +34,8 @@ import {
   Lock,
   Check,
   ShieldCheck,
-  KeyRound
+  KeyRound,
+  Move
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
@@ -162,6 +163,10 @@ export default function GeneratorPage() {
   const [infoColor, setInfoColor] = useState('#FFFFFF');
   const [speakerColor, setSpeakerColor] = useState('#FFFFFF');
 
+  // Title Position Offsets (Horizontal & Vertikal)
+  const [titleXOffset, setTitleXOffset] = useState<number>(0);
+  const [titleYOffset, setTitleYOffset] = useState<number>(0);
+
   // Admin & Thumbnail Settings states
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -257,6 +262,8 @@ export default function GeneratorPage() {
         if (saved.titleColor) setTitleColor(saved.titleColor);
         if (saved.infoColor) setInfoColor(saved.infoColor);
         if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
+        if (saved.titleXOffset !== undefined) setTitleXOffset(saved.titleXOffset);
+        if (saved.titleYOffset !== undefined) setTitleYOffset(saved.titleYOffset);
         if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
         if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
         if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
@@ -301,6 +308,8 @@ export default function GeneratorPage() {
         titleColor,
         infoColor,
         speakerColor,
+        titleXOffset,
+        titleYOffset,
         speakerSpacingOffset,
         speakerYOffset,
         eventInfoYOffset,
@@ -411,6 +420,8 @@ export default function GeneratorPage() {
     titleColor,
     infoColor,
     speakerColor,
+    titleXOffset,
+    titleYOffset,
     speakerSpacingOffset,
     speakerYOffset,
     eventInfoYOffset,
@@ -553,6 +564,68 @@ export default function GeneratorPage() {
                 placeholder="Masukkan judul dialog..."
                 className="w-full min-h-[100px] p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium resize-none uppercase"
               />
+
+              {/* Atur Posisi Judul (Horizontal & Vertikal) */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                    <Move size={13} className="text-orange-500" />
+                    Atur Posisi Judul
+                  </span>
+                  {(titleXOffset !== 0 || titleYOffset !== 0) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTitleXOffset(0);
+                        setTitleYOffset(0);
+                      }}
+                      className="text-[11px] font-bold text-orange-600 hover:text-orange-700 transition-colors"
+                    >
+                      Reset Posisi
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Kiri / Kanan */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-600">
+                      <span>↔️ Kiri / Kanan</span>
+                      <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded-md border border-slate-200 text-[10px]">
+                        {titleXOffset > 0 ? `+${titleXOffset}` : titleXOffset} px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-200"
+                      max="400"
+                      step="5"
+                      value={titleXOffset}
+                      onChange={(e) => setTitleXOffset(Number(e.target.value))}
+                      className="w-full accent-orange-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Atas / Bawah */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-600">
+                      <span>↕️ Atas / Bawah</span>
+                      <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded-md border border-slate-200 text-[10px]">
+                        {titleYOffset > 0 ? `+${titleYOffset}` : titleYOffset} px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-120"
+                      max="200"
+                      step="5"
+                      value={titleYOffset}
+                      onChange={(e) => setTitleYOffset(Number(e.target.value))}
+                      className="w-full accent-orange-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 2. Dialog, Tanggal, Jam */}

@@ -42,6 +42,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     titleColor = '#FFFFFF',
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
+    titleXOffset = 0,
+    titleYOffset = 0,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     eventInfoYOffset = 0,
@@ -215,8 +217,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
         {/* 4. Title */}
         <text
-          x="70"
-          y="225"
+          x={70 + titleXOffset}
+          y={225 + titleYOffset}
           fill={titleColor}
           fontFamily="Space Grotesk, sans-serif"
           fontSize="42"
@@ -224,7 +226,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           textAnchor="start"
         >
           {title.toUpperCase().split('\n').map((line, i) => (
-            <tspan x="70" dy={i === 0 ? 0 : 56} key={i}>{line}</tspan>
+            <tspan x={70 + titleXOffset} dy={i === 0 ? 0 : 56} key={i}>{line}</tspan>
           ))}
         </text>
 

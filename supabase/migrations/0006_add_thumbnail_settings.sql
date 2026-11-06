@@ -4,3 +4,4 @@
 
 ALTER TABLE branding_settings
   ADD COLUMN IF NOT EXISTS thumbnail_settings JSONB DEFAULT '{}'::jsonb;
+
