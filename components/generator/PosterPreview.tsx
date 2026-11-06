@@ -44,6 +44,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     speakerColor = '#FFFFFF',
     titleXOffset = 0,
     titleYOffset = 0,
+    showEventName = true,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     eventInfoYOffset = 0,
@@ -231,17 +232,19 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         </text>
 
         {/* 5. Event Name */}
-        <text
-          x="70"
-          y={380 + eventInfoYOffset}
-          fill={infoColor}
-          fontFamily="Inter, sans-serif"
-          fontSize="24"
-          fontWeight="700"
-          letterSpacing="1.5"
-        >
-          {eventName.toUpperCase()}
-        </text>
+        {showEventName !== false && (
+          <text
+            x="70"
+            y={380 + eventInfoYOffset}
+            fill={infoColor}
+            fontFamily="Inter, sans-serif"
+            fontSize="24"
+            fontWeight="700"
+            letterSpacing="1.5"
+          >
+            {eventName.toUpperCase()}
+          </text>
+        )}
 
         {/* 6. Date with Calendar Icon */}
         <g transform={`translate(70, ${425 + eventInfoYOffset})`}>

@@ -155,6 +155,7 @@ export default function GeneratorPage() {
   // Logo visibility & position controls
   const [showRriLogo, setShowRriLogo] = useState(true);
   const [showProgramLogo, setShowProgramLogo] = useState(true);
+  const [showEventName, setShowEventName] = useState(true);
   const [rriLogoPosition, setRriLogoPosition] = useState<'left' | 'right'>('left');
   const [programLogoPosition, setProgramLogoPosition] = useState<'left' | 'right'>('right');
 
@@ -257,6 +258,7 @@ export default function GeneratorPage() {
         if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
         if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
         if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
+        if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
         if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
         if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
         if (saved.titleColor) setTitleColor(saved.titleColor);
@@ -303,6 +305,7 @@ export default function GeneratorPage() {
         selectedProgram,
         showRriLogo,
         showProgramLogo,
+        showEventName,
         rriLogoPosition,
         programLogoPosition,
         titleColor,
@@ -415,6 +418,7 @@ export default function GeneratorPage() {
     hutRiLogoUrl: branding?.hut_ri_logo_url || null,
     showRriLogo,
     showProgramLogo,
+    showEventName,
     rriLogoPosition,
     programLogoPosition,
     titleColor,
@@ -632,10 +636,25 @@ export default function GeneratorPage() {
             <div className="space-y-4">
               {/* Pilih Dialog */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                  <Mic2 size={12} className="text-slate-400" />
-                  Nama Acara / Dialog
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                    <Mic2 size={12} className="text-slate-400" />
+                    Nama Acara / Dialog
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowEventName(!showEventName)}
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                      showEventName 
+                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                        : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                    }`}
+                    title={showEventName ? 'Sembunyikan Nama Acara di thumbnail' : 'Tampilkan Nama Acara di thumbnail'}
+                  >
+                    {showEventName ? <Eye size={12} /> : <EyeOff size={12} />}
+                    {showEventName ? 'Tampil' : 'Sembunyi'}
+                  </button>
+                </div>
                 {dialogs.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2">
                     {dialogs.map((d) => (
