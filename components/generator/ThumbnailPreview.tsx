@@ -34,6 +34,13 @@ export interface ThumbnailData {
   rriLogoUrl: string | null;
   programLogoUrl: string | null;
   hutRiLogoUrl?: string | null;
+  showRriLogo?: boolean;
+  showProgramLogo?: boolean;
+  rriLogoPosition?: 'left' | 'right';
+  programLogoPosition?: 'left' | 'right';
+  titleColor?: string;
+  infoColor?: string;
+  speakerColor?: string;
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
   eventInfoYOffset?: number;
@@ -57,6 +64,13 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     rriLogoUrl,
     programLogoUrl,
     hutRiLogoUrl,
+    showRriLogo = true,
+    showProgramLogo = true,
+    rriLogoPosition = 'left',
+    programLogoPosition = 'right',
+    titleColor = '#FFFFFF',
+    infoColor = '#FFFFFF',
+    speakerColor = '#FFFFFF',
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     eventInfoYOffset = 0,
@@ -66,6 +80,45 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
   
   // Check if date contains AGUSTUS
   const isAugust = date.toUpperCase().includes('AGUSTUS');
+
+  // Determine logo positions and visibility
+  const showRri = showRriLogo !== false && Boolean(rriLogoUrl);
+  const showProg = showProgramLogo !== false && Boolean(programLogoUrl);
+
+  let rriX = 80;
+  let rriY = 50;
+  let progX = 1080;
+  let progY = 45;
+
+  if (showRri && showProg) {
+    if (rriLogoPosition === 'right' && programLogoPosition === 'left') {
+      rriX = 1080;
+      rriY = 45;
+      progX = 80;
+      progY = 50;
+    } else if (rriLogoPosition === 'left' && programLogoPosition === 'left') {
+      rriX = 80;
+      rriY = 50;
+      progX = 240;
+      progY = 45;
+    } else if (rriLogoPosition === 'right' && programLogoPosition === 'right') {
+      rriX = 920;
+      rriY = 45;
+      progX = 1080;
+      progY = 45;
+    } else {
+      rriX = 80;
+      rriY = 50;
+      progX = 1080;
+      progY = 45;
+    }
+  } else if (showRri) {
+    rriX = rriLogoPosition === 'right' ? 1080 : 80;
+    rriY = rriLogoPosition === 'right' ? 45 : 50;
+  } else if (showProg) {
+    progX = programLogoPosition === 'left' ? 80 : 1080;
+    progY = programLogoPosition === 'left' ? 50 : 45;
+  }
 
   // Left-aligned speaker layouts starting from x=80
   const speakerLayouts: Record<number, any> = {
@@ -97,13 +150,27 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         )}
 
         {/* 2. Logo RRI */}
-        {rriLogoUrl && (
-          <image href={rriLogoUrl} x="80" y="50" width="140" height="70" preserveAspectRatio="xMinYMid meet" />
+        {showRri && rriLogoUrl && (
+          <image
+            href={rriLogoUrl}
+            x={rriX}
+            y={rriY}
+            width="140"
+            height="70"
+            preserveAspectRatio={rriX > 600 ? "xMaxYMid meet" : "xMinYMid meet"}
+          />
         )}
 
         {/* 3. Logo Program (PRO 1 / PRO 2 / PRO 4) */}
-        {programLogoUrl && (
-          <image href={programLogoUrl} x="1080" y="45" width="140" height="70" preserveAspectRatio="xMaxYMid meet" />
+        {showProg && programLogoUrl && (
+          <image
+            href={programLogoUrl}
+            x={progX}
+            y={progY}
+            width="140"
+            height="70"
+            preserveAspectRatio={progX > 600 ? "xMaxYMid meet" : "xMinYMid meet"}
+          />
         )}
 
         {/* 3.5 Logo HUT RI (Shown in August if available) */}
@@ -115,7 +182,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         <text
           x="80"
           y="180"
-          fill="white"
+          fill={titleColor}
           fontFamily="Space Grotesk, sans-serif"
           fontSize="36"
           fontWeight="700"
@@ -130,7 +197,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         <text
           x="80"
           y={295 + eventInfoYOffset}
-          fill="white"
+          fill={infoColor}
           fontFamily="Inter, sans-serif"
           fontSize="22"
           fontWeight="700"
@@ -141,14 +208,14 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
 
         {/* 6. Date with Calendar Icon */}
         <g transform={`translate(${420 + eventInfoXSpacing}, ${275 + eventInfoYOffset})`}>
-          <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M16 2V6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 2V6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M3 10H21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke={infoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M16 2V6" stroke={infoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 2V6" stroke={infoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 10H21" stroke={infoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <text
             x="32"
             y="18"
-            fill="white"
+            fill={infoColor}
             fontFamily="Inter, sans-serif"
             fontSize="20"
             fontWeight="700"
@@ -159,12 +226,12 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
 
         {/* 7. Time with Clock Icon */}
         <g transform={`translate(${750 + eventInfoXSpacing * 2}, ${273 + eventInfoYOffset})`}>
-          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-          <path d="M12 6V12L16 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="10" stroke={infoColor} strokeWidth="2" />
+          <path d="M12 6V12L16 14" stroke={infoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           <text
             x="32"
             y="20"
-            fill="white"
+            fill={infoColor}
             fontFamily="Inter, sans-serif"
             fontSize="20"
             fontWeight="700"
@@ -212,7 +279,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                 <text
                   x={count === 1 ? currentX + r + 30 : currentX - r}
                   y={count === 1 ? currentY - 5 : currentY + r + 28}
-                  fill="white"
+                  fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
                   fontWeight="700"
@@ -225,7 +292,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                 <text
                   x={count === 1 ? currentX + r + 30 : currentX - r}
                   y={count === 1 ? currentY + 35 : currentY + r + 58}
-                  fill="white"
+                  fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.posFontSize}
                   fontWeight="500"

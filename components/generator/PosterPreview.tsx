@@ -35,6 +35,13 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     rriLogoUrl,
     programLogoUrl,
     hutRiLogoUrl,
+    showRriLogo = true,
+    showProgramLogo = true,
+    rriLogoPosition = 'left',
+    programLogoPosition = 'right',
+    titleColor = '#FFFFFF',
+    infoColor = '#FFFFFF',
+    speakerColor = '#FFFFFF',
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     eventInfoYOffset = 0,
@@ -43,6 +50,45 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
   } = data;
 
   const isAugust = date.toUpperCase().includes('AGUSTUS');
+
+  // Determine logo positions and visibility
+  const showRri = showRriLogo !== false && Boolean(rriLogoUrl);
+  const showProg = showProgramLogo !== false && Boolean(programLogoUrl);
+
+  let rriX = 70;
+  let rriY = 60;
+  let progX = 850;
+  let progY = 55;
+
+  if (showRri && showProg) {
+    if (rriLogoPosition === 'right' && programLogoPosition === 'left') {
+      rriX = 850;
+      rriY = 55;
+      progX = 70;
+      progY = 60;
+    } else if (rriLogoPosition === 'left' && programLogoPosition === 'left') {
+      rriX = 70;
+      rriY = 60;
+      progX = 250;
+      progY = 55;
+    } else if (rriLogoPosition === 'right' && programLogoPosition === 'right') {
+      rriX = 670;
+      rriY = 55;
+      progX = 850;
+      progY = 55;
+    } else {
+      rriX = 70;
+      rriY = 60;
+      progX = 850;
+      progY = 55;
+    }
+  } else if (showRri) {
+    rriX = rriLogoPosition === 'right' ? 850 : 70;
+    rriY = rriLogoPosition === 'right' ? 55 : 60;
+  } else if (showProg) {
+    progX = programLogoPosition === 'left' ? 70 : 850;
+    progY = programLogoPosition === 'left' ? 60 : 55;
+  }
 
   // Speaker layout configurations for 1080 x 1350 (4:5)
   const speakerLayouts: Record<number, any> = {
@@ -139,13 +185,27 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         )}
 
         {/* 2. Logo RRI */}
-        {rriLogoUrl && (
-          <image href={rriLogoUrl} x="70" y="60" width="160" height="80" preserveAspectRatio="xMinYMid meet" />
+        {showRri && rriLogoUrl && (
+          <image
+            href={rriLogoUrl}
+            x={rriX}
+            y={rriY}
+            width="160"
+            height="80"
+            preserveAspectRatio={rriX > 500 ? "xMaxYMid meet" : "xMinYMid meet"}
+          />
         )}
 
         {/* 3. Logo Program (PRO 1 / PRO 2 / PRO 4) */}
-        {programLogoUrl && (
-          <image href={programLogoUrl} x="850" y="55" width="160" height="80" preserveAspectRatio="xMaxYMid meet" />
+        {showProg && programLogoUrl && (
+          <image
+            href={programLogoUrl}
+            x={progX}
+            y={progY}
+            width="160"
+            height="80"
+            preserveAspectRatio={progX > 500 ? "xMaxYMid meet" : "xMinYMid meet"}
+          />
         )}
 
         {/* 3.5 Logo HUT RI (Shown in August if available) */}
@@ -157,7 +217,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         <text
           x="70"
           y="225"
-          fill="white"
+          fill={titleColor}
           fontFamily="Space Grotesk, sans-serif"
           fontSize="42"
           fontWeight="700"
@@ -172,7 +232,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         <text
           x="70"
           y={380 + eventInfoYOffset}
-          fill="white"
+          fill={infoColor}
           fontFamily="Inter, sans-serif"
           fontSize="24"
           fontWeight="700"
@@ -183,14 +243,14 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
         {/* 6. Date with Calendar Icon */}
         <g transform={`translate(70, ${425 + eventInfoYOffset})`}>
-          <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M16 2V6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 2V6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M3 10H21" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke={infoColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M16 2V6" stroke={infoColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 2V6" stroke={infoColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 10H21" stroke={infoColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
           <text
             x="34"
             y="18"
-            fill="white"
+            fill={infoColor}
             fontFamily="Inter, sans-serif"
             fontSize="22"
             fontWeight="700"
@@ -201,12 +261,12 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
         {/* 7. Time with Clock Icon */}
         <g transform={`translate(${540 + eventInfoXSpacing}, ${423 + eventInfoYOffset})`}>
-          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2.2" />
-          <path d="M12 6V12L16 14" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="10" stroke={infoColor} strokeWidth="2.2" />
+          <path d="M12 6V12L16 14" stroke={infoColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           <text
             x="34"
             y="20"
-            fill="white"
+            fill={infoColor}
             fontFamily="Inter, sans-serif"
             fontSize="22"
             fontWeight="700"
@@ -221,8 +281,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           y1={480 + eventInfoYOffset}
           x2="1010"
           y2={480 + eventInfoYOffset}
-          stroke="white"
-          strokeOpacity="0.2"
+          stroke={infoColor}
+          strokeOpacity="0.25"
           strokeWidth="1.5"
         />
 
@@ -290,7 +350,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
                 <text
                   x={currentX}
                   y={currentY + r + 28}
-                  fill="white"
+                  fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
                   fontWeight="700"
@@ -303,7 +363,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
                 <text
                   x={currentX}
                   y={currentY + r + 28 + (layout.fontSize * 1.2)}
-                  fill="white"
+                  fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.posFontSize}
                   fontWeight="500"

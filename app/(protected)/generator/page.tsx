@@ -23,7 +23,12 @@ import {
   Tv,
   Smartphone,
   Layout,
-  Upload
+  Upload,
+  Eye,
+  EyeOff,
+  Palette,
+  ArrowLeftRight,
+  RotateCcw
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
@@ -96,6 +101,15 @@ const parseIndonesianDate = (dateStr: string): string => {
   }
 };
 
+const COLOR_PRESETS = [
+  { name: 'Putih', hex: '#FFFFFF' },
+  { name: 'Kuning', hex: '#FACC15' },
+  { name: 'Oranye', hex: '#FB923C' },
+  { name: 'Biru', hex: '#38BDF8' },
+  { name: 'Hijau', hex: '#34D399' },
+  { name: 'Merah', hex: '#F87171' },
+];
+
 export default function GeneratorPage() {
   const [dialogs, setDialogs] = useState<any[]>([]);
   const [allPresenters, setAllPresenters] = useState<any[]>([]);
@@ -129,6 +143,18 @@ export default function GeneratorPage() {
   const [designFormat, setDesignFormat] = useState<'youtube' | 'poster'>('youtube');
   const [customPortraitBg, setCustomPortraitBg] = useState<string | null>(null);
   const [isUploadingPortraitBg, setIsUploadingPortraitBg] = useState(false);
+
+  // Logo visibility & position controls
+  const [showRriLogo, setShowRriLogo] = useState(true);
+  const [showProgramLogo, setShowProgramLogo] = useState(true);
+  const [rriLogoPosition, setRriLogoPosition] = useState<'left' | 'right'>('left');
+  const [programLogoPosition, setProgramLogoPosition] = useState<'left' | 'right'>('right');
+
+  // Text color customization
+  const [titleColor, setTitleColor] = useState('#FFFFFF');
+  const [infoColor, setInfoColor] = useState('#FFFFFF');
+  const [speakerColor, setSpeakerColor] = useState('#FFFFFF');
+
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Presenters filtered by selected dialog
@@ -250,6 +276,13 @@ export default function GeneratorPage() {
                     selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
                     (branding?.pro1_logo_url || null),
     hutRiLogoUrl: branding?.hut_ri_logo_url || null,
+    showRriLogo,
+    showProgramLogo,
+    rriLogoPosition,
+    programLogoPosition,
+    titleColor,
+    infoColor,
+    speakerColor,
     speakerSpacingOffset,
     speakerYOffset,
     eventInfoYOffset,
@@ -518,6 +551,252 @@ export default function GeneratorPage() {
                       {prog}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Pengaturan Logo RRI & Programa */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-slate-400" />
+                    Posisi & Tampilan Logo
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRriLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
+                      setProgramLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
+                    }}
+                    className="text-[11px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-orange-50 border border-orange-200/60"
+                    title="Tukar posisi Logo RRI dan Logo Programa"
+                  >
+                    <ArrowLeftRight size={12} />
+                    Tukar Posisi
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Logo RRI */}
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700">Logo RRI</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowRriLogo(!showRriLogo)}
+                        className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                          showRriLogo 
+                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                            : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                        }`}
+                      >
+                        {showRriLogo ? <Eye size={12} /> : <EyeOff size={12} />}
+                        {showRriLogo ? 'Tampil' : 'Sembunyi'}
+                      </button>
+                    </div>
+                    {showRriLogo && (
+                      <div className="flex items-center gap-1 pt-1 border-t border-slate-200/60">
+                        <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
+                        <button
+                          type="button"
+                          onClick={() => setRriLogoPosition('left')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                            rriLogoPosition === 'left'
+                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Kiri
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRriLogoPosition('right')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                            rriLogoPosition === 'right'
+                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Kanan
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Logo Programa */}
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700">Logo {selectedProgram}</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowProgramLogo(!showProgramLogo)}
+                        className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                          showProgramLogo 
+                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                            : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                        }`}
+                      >
+                        {showProgramLogo ? <Eye size={12} /> : <EyeOff size={12} />}
+                        {showProgramLogo ? 'Tampil' : 'Sembunyi'}
+                      </button>
+                    </div>
+                    {showProgramLogo && (
+                      <div className="flex items-center gap-1 pt-1 border-t border-slate-200/60">
+                        <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
+                        <button
+                          type="button"
+                          onClick={() => setProgramLogoPosition('left')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                            programLogoPosition === 'left'
+                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Kiri
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProgramLogoPosition('right')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                            programLogoPosition === 'right'
+                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          Kanan
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Warna Font & Teks */}
+            <div className="space-y-3 bg-white border border-slate-200 p-4 rounded-2xl shadow-xs">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Palette size={16} className="text-orange-500" />
+                  Warna Font & Teks
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTitleColor('#FFFFFF');
+                    setInfoColor('#FFFFFF');
+                    setSpeakerColor('#FFFFFF');
+                  }}
+                  className="text-xs font-bold text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-50"
+                  title="Kembalikan semua warna teks ke Putih"
+                >
+                  <RotateCcw size={12} />
+                  Reset Putih
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {/* 1. Judul Dialog */}
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: titleColor }} />
+                    <span className="text-xs font-semibold text-slate-700">Judul Dialog</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {COLOR_PRESETS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => setTitleColor(c.hex)}
+                        className={`w-5 h-5 rounded-full border transition-all ${
+                          titleColor.toUpperCase() === c.hex.toUpperCase()
+                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
+                            : 'border-slate-300 hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: c.hex }}
+                        title={c.name}
+                      />
+                    ))}
+                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
+                      <input
+                        type="color"
+                        value={titleColor}
+                        onChange={(e) => setTitleColor(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
+                        🎨
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 2. Info Acara & Tanggal */}
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: infoColor }} />
+                    <span className="text-xs font-semibold text-slate-700">Info & Tanggal</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {COLOR_PRESETS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => setInfoColor(c.hex)}
+                        className={`w-5 h-5 rounded-full border transition-all ${
+                          infoColor.toUpperCase() === c.hex.toUpperCase()
+                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
+                            : 'border-slate-300 hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: c.hex }}
+                        title={c.name}
+                      />
+                    ))}
+                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
+                      <input
+                        type="color"
+                        value={infoColor}
+                        onChange={(e) => setInfoColor(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
+                        🎨
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 3. Nama & Jabatan Pembicara */}
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: speakerColor }} />
+                    <span className="text-xs font-semibold text-slate-700">Nama Pembicara</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {COLOR_PRESETS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => setSpeakerColor(c.hex)}
+                        className={`w-5 h-5 rounded-full border transition-all ${
+                          speakerColor.toUpperCase() === c.hex.toUpperCase()
+                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
+                            : 'border-slate-300 hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: c.hex }}
+                        title={c.name}
+                      />
+                    ))}
+                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
+                      <input
+                        type="color"
+                        value={speakerColor}
+                        onChange={(e) => setSpeakerColor(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
+                        🎨
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
