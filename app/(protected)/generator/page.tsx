@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { ThumbnailPreview } from '@/components/generator/ThumbnailPreview';
+import { PosterPreview } from '@/components/generator/PosterPreview';
 import { SpeakerSelect } from '@/components/generator/SpeakerSelect';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -16,10 +17,15 @@ import {
   RefreshCw,
   Calendar,
   Clock,
-  Mic2
+  Mic2,
+  Tv,
+  Smartphone,
+  Layout,
+  Upload
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
+import { uploadFile } from '@/lib/storage/upload';
 
 // Helper to format Date string (YYYY-MM-DD) to Indonesian format (HARI, DD BULAN YYYY)
 const formatIndonesianDate = (dateString: string): string => {
@@ -118,6 +124,9 @@ export default function GeneratorPage() {
   const [eventInfoYOffset, setEventInfoYOffset] = useState<number>(0);
   const [eventInfoXSpacing, setEventInfoXSpacing] = useState<number>(0);
   const [selectedProgram, setSelectedProgram] = useState<'PRO 1' | 'PRO 2' | 'PRO 4'>('PRO 1');
+  const [designFormat, setDesignFormat] = useState<'youtube' | 'poster'>('youtube');
+  const [customPortraitBg, setCustomPortraitBg] = useState<string | null>(null);
+  const [isUploadingPortraitBg, setIsUploadingPortraitBg] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Presenters filtered by selected dialog
@@ -200,13 +209,92 @@ export default function GeneratorPage() {
     };
   });
 
+  const handlePortraitBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 1. Immediate preview using FileReader DataURL so it shows up instantly
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setCustomPortraitBg(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // 2. Upload to Supabase storage in background for persistent public URL
+    setIsUploadingPortraitBg(true);
+    try {
+      const fileName = `portrait-bg-${Date.now()}`;
+      const { publicUrl } = await uploadFile('presenters', fileName, file);
+      setCustomPortraitBg(publicUrl);
+    } catch (err) {
+      console.warn('Storage upload note:', err);
+    } finally {
+      setIsUploadingPortraitBg(false);
+    }
+  };
+
+  const portraitBgUrl = customPortraitBg || selectedPresenter?.background_portrait_url || null;
+
+  const basePreviewData = {
+    title,
+    eventName,
+    date,
+    time,
+    speakers: resolvedSpeakers,
+    rriLogoUrl: branding?.rri_logo_url || null,
+    programLogoUrl: selectedProgram === 'PRO 2' ? (branding?.pro2_logo_url || null) : 
+                    selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
+                    (branding?.pro1_logo_url || null),
+    hutRiLogoUrl: branding?.hut_ri_logo_url || null,
+    speakerSpacingOffset,
+    speakerYOffset,
+    eventInfoYOffset,
+    eventInfoXSpacing,
+    phoneNumber: branding?.phone_number || '0811 6881 2123',
+  };
+
+  const youtubePreviewData = {
+    ...basePreviewData,
+    presenterBgUrl: selectedPresenter?.background_url || null,
+  };
+
+  const posterPreviewData = {
+    ...basePreviewData,
+    presenterBgUrl: portraitBgUrl,
+  };
+
   const handleDownload = async () => {
     setIsExporting(true);
     try {
-      const fileName = `thumbnail-${title.toLowerCase().replace(/\s+/g, '-').substring(0, 30)}-${Date.now()}`;
-      await exportToPng('thumbnail-svg', fileName);
+      const isPoster = designFormat === 'poster';
+      const prefix = isPoster ? 'poster' : 'thumbnail';
+      const resSuffix = isPoster ? '1080x1350' : '1280x720';
+      const svgId = isPoster ? 'poster-svg' : 'thumbnail-svg';
+      const width = isPoster ? 1080 : 1280;
+      const height = isPoster ? 1350 : 720;
+      const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 30);
+      const fileName = `${prefix}-${cleanTitle}-${resSuffix}-${Date.now()}`;
+      await exportToPng(svgId, fileName, width, height);
     } catch (error: any) {
       alert(`Gagal download: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadBoth = async () => {
+    setIsExporting(true);
+    try {
+      const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 30);
+      const timestamp = Date.now();
+      await exportToPng('thumbnail-svg', `thumbnail-${cleanTitle}-1280x720-${timestamp}`, 1280, 720);
+      // Brief delay so browser triggers separate downloads reliably
+      await new Promise((r) => setTimeout(r, 450));
+      await exportToPng('poster-svg', `poster-${cleanTitle}-1080x1350-${timestamp}`, 1080, 1350);
+    } catch (error: any) {
+      alert(`Gagal download kedua format: ${error.message}`);
     } finally {
       setIsExporting(false);
     }
@@ -238,13 +326,58 @@ export default function GeneratorPage() {
           <header className="space-y-1">
             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
               <Sparkles size={24} className="text-orange-500" />
-              Thumbnail Generator
+              Thumbnail & Poster Generator
             </h1>
-            <p className="text-sm text-slate-500 italic">Isi form di bawah untuk membuat thumbnail dialog.</p>
+            <p className="text-sm text-slate-500 italic">Buat thumbnail YouTube (16:9) atau poster siaran (4:5) secara instan.</p>
           </header>
 
           <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-8 space-y-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
             
+            {/* Format Desain Switcher */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                <Layout size={12} className="text-slate-400" />
+                Pilih Format Desain
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDesignFormat('youtube')}
+                  className={`p-3 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${
+                    designFormat === 'youtube'
+                      ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
+                      : 'border-slate-100 bg-slate-50/60 hover:border-slate-200 hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Tv size={15} className={designFormat === 'youtube' ? 'text-orange-500' : 'text-slate-400'} />
+                    <span className={`text-xs font-bold uppercase tracking-wider ${designFormat === 'youtube' ? 'text-orange-700' : 'text-slate-700'}`}>
+                      YouTube
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-400">1280 × 720 (16:9)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDesignFormat('poster')}
+                  className={`p-3 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${
+                    designFormat === 'poster'
+                      ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
+                      : 'border-slate-100 bg-slate-50/60 hover:border-slate-200 hover:bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Smartphone size={15} className={designFormat === 'poster' ? 'text-orange-500' : 'text-slate-400'} />
+                    <span className={`text-xs font-bold uppercase tracking-wider ${designFormat === 'poster' ? 'text-orange-700' : 'text-slate-700'}`}>
+                      Poster Siaran
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-400">1080 × 1350 (4:5)</span>
+                </button>
+              </div>
+            </div>
+
             {/* 1. Judul Dialog */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
@@ -387,41 +520,136 @@ export default function GeneratorPage() {
               </div>
             </div>
 
-            {/* 3. Pilih Presenter (Background) */}
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                <ImageIcon size={16} className="text-slate-400" />
-                Pilih Presenter
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {presenters.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedPresenterId(p.id)}
-                    className={`p-3 rounded-2xl border-2 transition-all text-left space-y-2 ${
-                      selectedPresenterId === p.id
-                        ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
-                        : 'border-slate-100 bg-white hover:border-slate-200'
-                    }`}
-                  >
-                    <div className="w-full aspect-[3/2] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                      {p.background_url ? (
-                        <img src={p.background_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
-                          <ImageIcon size={20} />
-                        </div>
-                      )}
+            {/* 3. Background Section */}
+            {designFormat === 'poster' ? (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                      <ImageIcon size={16} className="text-slate-400" />
+                      Background Poster Portrait (1080×1350)
+                    </label>
+                    {portraitBgUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomPortraitBg(null)}
+                        className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        Reset ke Hitam Polos
+                      </button>
+                    )}
+                  </div>
+
+                  {portraitBgUrl ? (
+                    <div className="relative aspect-[4/5] max-h-52 w-auto mx-auto rounded-2xl overflow-hidden border-2 border-orange-500 shadow-md group">
+                      <img src={portraitBgUrl} alt="Background Portrait" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                        <label className="cursor-pointer bg-white text-slate-900 px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-slate-100 transition-all">
+                          <Upload size={14} />
+                          Ganti Background
+                          <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setCustomPortraitBg(null)}
+                          className="bg-red-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-lg hover:bg-red-700 transition-all"
+                        >
+                          Pakai Hitam Polos
+                        </button>
+                      </div>
                     </div>
-                    <span className={`text-xs font-bold uppercase tracking-wider block text-center ${
-                      selectedPresenterId === p.id ? 'text-orange-600' : 'text-slate-500'
-                    }`}>
-                      {p.name}
-                    </span>
-                  </button>
-                ))}
+                  ) : (
+                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center bg-slate-50/80 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center gap-3">
+                      <div className="flex items-center gap-2 bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        Hitam Polos (Aktif)
+                      </div>
+                      <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">
+                        Background belum di-upload. Sesuai pengaturan, poster otomatis menggunakan warna hitam polos.
+                      </p>
+                      <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-2 transition-all">
+                        {isUploadingPortraitBg ? (
+                          <Loader2 size={14} className="animate-spin text-orange-500" />
+                        ) : (
+                          <Upload size={14} className="text-orange-400" />
+                        )}
+                        <span>Upload Background Portrait (1080×1350)</span>
+                        <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Presenter picker for dialog presenter context */}
+                {presenters.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                      <UserCircle2 size={12} className="text-slate-400" />
+                      Presenter Acara (Opsional)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {presenters.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setSelectedPresenterId(p.id)}
+                          className={`p-2.5 rounded-xl border transition-all text-left flex items-center gap-2.5 ${
+                            selectedPresenterId === p.id
+                              ? 'border-orange-500 bg-orange-50 text-orange-700 font-bold'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                            {p.background_portrait_url || p.background_url ? (
+                              <img src={p.background_portrait_url || p.background_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300 text-[10px]">🎙️</div>
+                            )}
+                          </div>
+                          <span className="text-xs uppercase truncate">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              /* YouTube presenter background selection */
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
+                  <ImageIcon size={16} className="text-slate-400" />
+                  Pilih Presenter (Background 16:9)
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {presenters.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedPresenterId(p.id)}
+                      className={`p-3 rounded-2xl border-2 transition-all text-left space-y-2 ${
+                        selectedPresenterId === p.id
+                          ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
+                          : 'border-slate-100 bg-white hover:border-slate-200'
+                      }`}
+                    >
+                      <div className="w-full aspect-[3/2] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                        {p.background_url ? (
+                          <img src={p.background_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <ImageIcon size={20} />
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-xs font-bold uppercase tracking-wider block text-center ${
+                        selectedPresenterId === p.id ? 'text-orange-600' : 'text-slate-500'
+                      }`}>
+                        {p.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 4. Pilih Narasumber */}
             <div className="space-y-4">
@@ -538,7 +766,7 @@ export default function GeneratorPage() {
               </div>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 space-y-2.5">
               <Button
                 onClick={handleDownload}
                 disabled={isExporting}
@@ -549,9 +777,22 @@ export default function GeneratorPage() {
                 ) : (
                   <>
                     <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
-                    Download PNG
+                    <span>
+                      Download {designFormat === 'poster' ? 'Poster Siaran (1080 × 1350)' : 'Thumbnail YouTube (1280 × 720)'}
+                    </span>
                   </>
                 )}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={handleDownloadBoth}
+                disabled={isExporting}
+                variant="outline"
+                className="w-full h-11 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all"
+              >
+                <Sparkles size={14} className="text-orange-500" />
+                Download Keduanya (YouTube + Poster Sekaligus)
               </Button>
             </div>
           </div>
@@ -560,37 +801,77 @@ export default function GeneratorPage() {
         {/* Right: Live Preview */}
         <div className="lg:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Live Preview (1280 × 720)</h2>
-            <button 
-              onClick={fetchInitialData}
-              className="text-slate-400 hover:text-orange-500 transition-colors flex items-center gap-2 text-xs font-bold"
-            >
-              <RefreshCw size={14} />
-              REFRESH DATA
-            </button>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">
+                Live Preview ({designFormat === 'poster' ? '1080 × 1350' : '1280 × 720'})
+              </h2>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-orange-100 text-orange-700">
+                {designFormat === 'poster' ? 'Poster 4:5' : 'Thumbnail 16:9'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Quick toggle tab */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setDesignFormat('youtube')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    designFormat === 'youtube'
+                      ? 'bg-white text-orange-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Thumbnail YouTube (1280x720)"
+                >
+                  <Tv size={12} />
+                  16:9
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDesignFormat('poster')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    designFormat === 'poster'
+                      ? 'bg-white text-orange-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Poster Siaran (1080x1350)"
+                >
+                  <Smartphone size={12} />
+                  4:5
+                </button>
+              </div>
+
+              <button 
+                onClick={fetchInitialData}
+                className="text-slate-400 hover:text-orange-500 transition-colors flex items-center gap-1.5 text-xs font-bold"
+              >
+                <RefreshCw size={14} />
+                REFRESH
+              </button>
+            </div>
           </div>
 
-          <div className="sticky top-28">
-            <ThumbnailPreview
-              data={{
-                title,
-                eventName,
-                date,
-                time,
-                presenterBgUrl: selectedPresenter?.background_url || null,
-                speakers: resolvedSpeakers,
-                rriLogoUrl: branding?.rri_logo_url || null,
-                programLogoUrl: selectedProgram === 'PRO 2' ? (branding?.pro2_logo_url || null) : 
-                                selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
-                                (branding?.pro1_logo_url || null),
-                hutRiLogoUrl: branding?.hut_ri_logo_url || null,
-                speakerSpacingOffset,
-                speakerYOffset,
-                eventInfoYOffset,
-                eventInfoXSpacing,
-                phoneNumber: branding?.phone_number || '0811 6881 2123',
-              }}
-            />
+          <div className="sticky top-28 space-y-4">
+            {designFormat === 'youtube' ? (
+              <ThumbnailPreview
+                data={youtubePreviewData}
+                id="thumbnail-svg"
+              />
+            ) : (
+              <PosterPreview
+                data={posterPreviewData}
+                id="poster-svg"
+              />
+            )}
+
+            {/* Hidden off-screen instance of the other format so downloading either/both works instantly */}
+            <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
+              {designFormat === 'youtube' ? (
+                <PosterPreview data={posterPreviewData} id="poster-svg" />
+              ) : (
+                <ThumbnailPreview data={youtubePreviewData} id="thumbnail-svg" />
+              )}
+            </div>
           </div>
         </div>
 

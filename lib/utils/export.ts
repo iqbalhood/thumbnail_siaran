@@ -29,8 +29,15 @@ async function toDataURL(url: string): Promise<string> {
  * 
  * @param svgId - The ID of the SVG element to export
  * @param fileName - The desired file name
+ * @param customWidth - Optional export width (defaults to viewBox width or 1280)
+ * @param customHeight - Optional export height (defaults to viewBox height or 720)
  */
-export async function exportToPng(svgId: string, fileName: string) {
+export async function exportToPng(
+  svgId: string, 
+  fileName: string,
+  customWidth?: number,
+  customHeight?: number
+) {
   const svgElement = document.getElementById(svgId) as SVGSVGElement | null;
   if (!svgElement) return;
 
@@ -51,25 +58,45 @@ export async function exportToPng(svgId: string, fileName: string) {
     }
   }
 
-  // 3. Serialize SVG to XML
+  // 3. Determine resolution from parameters or SVG viewBox
+  let width = customWidth;
+  let height = customHeight;
+  if (!width || !height) {
+    const viewBox = svgElement.getAttribute('viewBox');
+    if (viewBox) {
+      const parts = viewBox.trim().split(/[\s,]+/).map(Number);
+      if (parts.length === 4) {
+        width = width || parts[2];
+        height = height || parts[3];
+      }
+    }
+  }
+  width = width || 1280;
+  height = height || 720;
+
+  // Ensure clone has explicit width/height matching the resolution for crisp canvas rendering
+  clonedSvg.setAttribute('width', String(width));
+  clonedSvg.setAttribute('height', String(height));
+
+  // 4. Serialize SVG to XML
   const svgData = new XMLSerializer().serializeToString(clonedSvg);
   const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(svgBlob);
 
-  // 4. Create a Canvas to render the SVG
+  // 5. Create a Canvas to render the SVG
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const img = new Image();
 
-  canvas.width = 1280;
-  canvas.height = 720;
+  canvas.width = width;
+  canvas.height = height;
 
   return new Promise<void>((resolve, reject) => {
     img.onload = () => {
       if (ctx) {
-        ctx.drawImage(img, 0, 0, 1280, 720);
+        ctx.drawImage(img, 0, 0, width, height);
         
-        // 5. Trigger download
+        // 6. Trigger download
         const pngUrl = canvas.toDataURL('image/png');
         const downloadLink = document.createElement('a');
         downloadLink.href = pngUrl;

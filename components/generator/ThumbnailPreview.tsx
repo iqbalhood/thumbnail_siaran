@@ -183,16 +183,16 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             return (
               <g key={i}>
                 <defs>
-                  <clipPath id={`speaker-clip-${i}`}>
+                  <clipPath id={`${id}-speaker-clip-${i}`}>
                     <circle cx={currentX} cy={currentY} r={r} />
                   </clipPath>
-                  <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient id={`${id}-ring-grad`} x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#60a5fa" />
                     <stop offset="100%" stopColor="#1e40af" />
                   </linearGradient>
                 </defs>
                 {/* Outer Ring */}
-                <circle cx={currentX} cy={currentY} r={r + 5} stroke="url(#ring-grad)" strokeWidth="4" fill="none" />
+                <circle cx={currentX} cy={currentY} r={r + 5} stroke={`url(#${id}-ring-grad)`} strokeWidth="4" fill="none" />
                 {/* Speaker Photo */}
                 {speaker.photoUrl ? (
                   <image
@@ -201,7 +201,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                     y={currentY - r}
                     width={r * 2}
                     height={r * 2}
-                    clipPath={`url(#speaker-clip-${i})`}
+                    clipPath={`url(#${id}-speaker-clip-${i})`}
                     preserveAspectRatio="xMidYMid slice"
                   />
                 ) : (

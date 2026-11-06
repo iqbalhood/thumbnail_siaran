@@ -30,6 +30,9 @@ export type Database = {
           name: string;
           background_url: string | null;
           background_path: string | null;
+          background_portrait_url?: string | null;
+          background_portrait_path?: string | null;
+          dialog_id?: string | null;
           created_at: string;
           updated_at: string;
         };

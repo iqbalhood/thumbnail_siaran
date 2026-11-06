@@ -12,6 +12,8 @@ interface PresenterFormProps {
     name?: string;
     background_url?: string | null;
     background_path?: string | null;
+    background_portrait_url?: string | null;
+    background_portrait_path?: string | null;
     dialog_id?: string | null;
   };
   dialogs: Array<{ id: string; name: string }>;
@@ -24,7 +26,10 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
   const [dialogId, setDialogId] = useState(initialData?.dialog_id || (dialogs.length > 0 ? dialogs[0].id : ''));
   const [bgUrl, setBgUrl] = useState(initialData?.background_url || '');
   const [bgPath, setBgPath] = useState(initialData?.background_path || '');
+  const [bgPortraitUrl, setBgPortraitUrl] = useState(initialData?.background_portrait_url || '');
+  const [bgPortraitPath, setBgPortraitPath] = useState(initialData?.background_portrait_path || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingPortrait, setIsUploadingPortrait] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +49,23 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
     }
   };
 
+  const handlePortraitFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingPortrait(true);
+    try {
+      const fileName = `bg-portrait-${name.toLowerCase().replace(/\s+/g, '-') || 'presenter'}-${Date.now()}`;
+      const { publicUrl, storagePath } = await uploadFile('presenters', fileName, file);
+      setBgPortraitUrl(publicUrl);
+      setBgPortraitPath(storagePath);
+    } catch (error: any) {
+      alert(`Gagal upload background portrait: ${error.message}`);
+    } finally {
+      setIsUploadingPortrait(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || (dialogs.length > 0 && !dialogId)) return;
@@ -52,8 +74,10 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
     try {
       await onSubmit({
         name,
-        background_url: bgUrl,
-        background_path: bgPath,
+        background_url: bgUrl || null,
+        background_path: bgPath || null,
+        background_portrait_url: bgPortraitUrl || null,
+        background_portrait_path: bgPortraitPath || null,
         dialog_id: dialogId || null,
       });
     } finally {
@@ -122,7 +146,53 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
           </div>
         </div>
         <p className="text-[10px] text-slate-500 italic">
-          Rekomendasi: PNG/JPG 1280×720 dengan foto presenter di sisi kanan.
+          Rekomendasi: PNG/JPG 1280×720 untuk YouTube.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-slate-700">Background Poster Portrait (1080x1350) <span className="text-xs text-slate-400 font-normal">(Opsional)</span></label>
+          {bgPortraitUrl && (
+            <button
+              type="button"
+              onClick={() => {
+                setBgPortraitUrl('');
+                setBgPortraitPath('');
+              }}
+              className="text-xs text-red-500 hover:text-red-700 font-bold"
+            >
+              Hapus (Hitam Polos)
+            </button>
+          )}
+        </div>
+        <div className="relative aspect-[4/5] max-h-48 w-auto mx-auto bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-200 group">
+          {bgPortraitUrl ? (
+            <img src={bgPortraitUrl} alt="Portrait Preview" className="w-full h-full object-cover" />
+          ) : (
+            <div className="text-slate-500 flex flex-col items-center gap-1.5 p-4 text-center">
+              <div className="w-6 h-6 rounded-full bg-black border border-slate-300" />
+              <span className="text-xs font-semibold text-slate-700">Hitam Polos</span>
+              <span className="text-[10px] text-slate-400">Jika tidak diisi, poster otomatis hitam polos</span>
+            </div>
+          )}
+          
+          {isUploadingPortrait && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+              <Loader2 className="animate-spin text-orange-500" />
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-lg text-xs font-bold shadow-xl flex items-center gap-2">
+              <Upload size={14} />
+              {bgPortraitUrl ? 'Ganti Gambar' : 'Pilih Gambar'}
+              <input type="file" accept="image/*" onChange={handlePortraitFileChange} className="hidden" />
+            </label>
+          </div>
+        </div>
+        <p className="text-[10px] text-slate-500 italic text-center">
+          Rekomendasi: PNG/JPG 1080×1350 (4:5). Jika kosong, poster siaran akan hitam polos.
         </p>
       </div>
 

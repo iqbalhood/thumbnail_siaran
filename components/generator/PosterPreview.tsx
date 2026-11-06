@@ -1,0 +1,389 @@
+'use client';
+
+import React from 'react';
+import { ThumbnailData } from './ThumbnailPreview';
+
+function wrapText(text: string, maxChars: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if ((current + ' ' + word).trim().length > maxChars) {
+      if (current) lines.push(current.trim());
+      current = word;
+    } else {
+      current = (current + ' ' + word).trim();
+    }
+  }
+  if (current) lines.push(current.trim());
+  return lines;
+}
+
+interface PosterPreviewProps {
+  data: ThumbnailData;
+  id?: string;
+}
+
+export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
+  const {
+    title = 'SEKOLAH RAKYAT DI ACEH:\nMENJAWAB TANTANGAN PENDIDIKAN PINGGIRAN',
+    eventName = 'BANDA ACEH MENYAPA',
+    date = 'SELASA, 29 JULI 2025',
+    time = '09:00 – 10:00 WIB',
+    presenterBgUrl,
+    speakers = [],
+    rriLogoUrl,
+    programLogoUrl,
+    hutRiLogoUrl,
+    speakerSpacingOffset = 0,
+    speakerYOffset = 0,
+    eventInfoYOffset = 0,
+    eventInfoXSpacing = 0,
+    phoneNumber = '0811 6881 2123',
+  } = data;
+
+  const isAugust = date.toUpperCase().includes('AGUSTUS');
+
+  // Speaker layout configurations for 1080 x 1350 (4:5)
+  const speakerLayouts: Record<number, any> = {
+    1: {
+      positions: [{ x: 540, y: 700 }],
+      circleR: 140,
+      textWidth: 700,
+      fontSize: 30,
+      posFontSize: 19,
+    },
+    2: {
+      positions: [{ x: 310, y: 710 }, { x: 770, y: 710 }],
+      circleR: 115,
+      textWidth: 380,
+      fontSize: 24,
+      posFontSize: 16,
+    },
+    3: {
+      positions: [{ x: 190, y: 720 }, { x: 540, y: 720 }, { x: 890, y: 720 }],
+      circleR: 90,
+      textWidth: 280,
+      fontSize: 19,
+      posFontSize: 13,
+    },
+    4: {
+      positions: [
+        { x: 320, y: 640 },
+        { x: 760, y: 640 },
+        { x: 320, y: 920 },
+        { x: 760, y: 920 },
+      ],
+      circleR: 80,
+      textWidth: 380,
+      fontSize: 20,
+      posFontSize: 14,
+    },
+    5: {
+      positions: [
+        { x: 200, y: 640 },
+        { x: 540, y: 640 },
+        { x: 880, y: 640 },
+        { x: 360, y: 920 },
+        { x: 720, y: 920 },
+      ],
+      circleR: 72,
+      textWidth: 280,
+      fontSize: 17,
+      posFontSize: 12,
+    },
+  };
+
+  const count = Math.min(Math.max(speakers.length, 1), 5);
+  const layout = speakerLayouts[count];
+
+  return (
+    <div className="w-full max-w-[480px] mx-auto aspect-[4/5] bg-slate-200 rounded-2xl overflow-hidden shadow-2xl border border-slate-300 relative group">
+      <svg
+        id={id}
+        viewBox="0 0 1080 1350"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full"
+      >
+        <defs>
+          {/* Subtle gradient to keep header text always sharp */}
+          <linearGradient id={`${id}-header-grad`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#060f2c" stopOpacity="0.88" />
+            <stop offset="65%" stopColor="#060f2c" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#060f2c" stopOpacity="0" />
+          </linearGradient>
+          {/* Subtle gradient for bottom text & footer */}
+          <linearGradient id={`${id}-footer-grad`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#060f2c" stopOpacity="0" />
+            <stop offset="45%" stopColor="#060f2c" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="#060f2c" stopOpacity="0.95" />
+          </linearGradient>
+          <linearGradient id={`${id}-ring-grad`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#1e40af" />
+          </linearGradient>
+        </defs>
+
+        {/* 1. Background Layer */}
+        {presenterBgUrl ? (
+          <>
+            <image href={presenterBgUrl} width="1080" height="1350" preserveAspectRatio="xMidYMid slice" />
+            {/* Overlays for enhanced readability on uploaded portrait backgrounds */}
+            <rect width="1080" height="520" fill={`url(#${id}-header-grad)`} />
+            <rect y="740" width="1080" height="610" fill={`url(#${id}-footer-grad)`} />
+          </>
+        ) : (
+          /* Jika background belum di-upload, gunakan warna hitam polos */
+          <rect width="1080" height="1350" fill="#000000" />
+        )}
+
+        {/* 2. Logo RRI */}
+        {rriLogoUrl && (
+          <image href={rriLogoUrl} x="70" y="60" width="160" height="80" preserveAspectRatio="xMinYMid meet" />
+        )}
+
+        {/* 3. Logo Program (PRO 1 / PRO 2 / PRO 4) */}
+        {programLogoUrl && (
+          <image href={programLogoUrl} x="850" y="55" width="160" height="80" preserveAspectRatio="xMaxYMid meet" />
+        )}
+
+        {/* 3.5 Logo HUT RI (Shown in August if available) */}
+        {isAugust && hutRiLogoUrl && (
+          <image href={hutRiLogoUrl} x="420" y="45" width="280" height="95" preserveAspectRatio="xMidYMid meet" />
+        )}
+
+        {/* 4. Title */}
+        <text
+          x="70"
+          y="225"
+          fill="white"
+          fontFamily="Space Grotesk, sans-serif"
+          fontSize="42"
+          fontWeight="700"
+          textAnchor="start"
+        >
+          {title.toUpperCase().split('\n').map((line, i) => (
+            <tspan x="70" dy={i === 0 ? 0 : 56} key={i}>{line}</tspan>
+          ))}
+        </text>
+
+        {/* 5. Event Name */}
+        <text
+          x="70"
+          y={380 + eventInfoYOffset}
+          fill="white"
+          fontFamily="Inter, sans-serif"
+          fontSize="24"
+          fontWeight="700"
+          letterSpacing="1.5"
+        >
+          {eventName.toUpperCase()}
+        </text>
+
+        {/* 6. Date with Calendar Icon */}
+        <g transform={`translate(70, ${425 + eventInfoYOffset})`}>
+          <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M16 2V6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M8 2V6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 10H21" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <text
+            x="34"
+            y="18"
+            fill="white"
+            fontFamily="Inter, sans-serif"
+            fontSize="22"
+            fontWeight="700"
+          >
+            {date.toUpperCase()}
+          </text>
+        </g>
+
+        {/* 7. Time with Clock Icon */}
+        <g transform={`translate(${540 + eventInfoXSpacing}, ${423 + eventInfoYOffset})`}>
+          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2.2" />
+          <path d="M12 6V12L16 14" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <text
+            x="34"
+            y="20"
+            fill="white"
+            fontFamily="Inter, sans-serif"
+            fontSize="22"
+            fontWeight="700"
+          >
+            {time}
+          </text>
+        </g>
+
+        {/* Subtle separator line */}
+        <line
+          x1="70"
+          y1={480 + eventInfoYOffset}
+          x2="1010"
+          y2={480 + eventInfoYOffset}
+          stroke="white"
+          strokeOpacity="0.2"
+          strokeWidth="1.5"
+        />
+
+        {/* 8. Speaker Circles */}
+        {speakers.length > 0 ? (
+          speakers.slice(0, 5).map((speaker, i) => {
+            const pos = layout.positions[i];
+            const r = layout.circleR;
+
+            // Calculate responsive spacing offsets
+            let xOffset = 0;
+            if (count === 1) {
+              xOffset = 0;
+            } else if (count === 2) {
+              xOffset = (i === 0 ? -1 : 1) * speakerSpacingOffset;
+            } else if (count === 3) {
+              xOffset = (i - 1) * speakerSpacingOffset;
+            } else if (count === 4) {
+              xOffset = (i % 2 === 0 ? -1 : 1) * speakerSpacingOffset;
+            } else if (count === 5) {
+              if (i < 3) {
+                xOffset = (i === 0 ? -1 : i === 2 ? 1 : 0) * speakerSpacingOffset;
+              } else {
+                xOffset = (i === 3 ? -1 : 1) * speakerSpacingOffset;
+              }
+            }
+
+            const currentX = pos.x + xOffset;
+            const currentY = pos.y + speakerYOffset;
+
+            return (
+              <g key={i}>
+                <defs>
+                  <clipPath id={`${id}-speaker-clip-${i}`}>
+                    <circle cx={currentX} cy={currentY} r={r} />
+                  </clipPath>
+                </defs>
+
+                {/* Outer Ring */}
+                <circle
+                  cx={currentX}
+                  cy={currentY}
+                  r={r + 5}
+                  stroke={`url(#${id}-ring-grad)`}
+                  strokeWidth="4"
+                  fill="none"
+                />
+
+                {/* Speaker Photo */}
+                {speaker.photoUrl ? (
+                  <image
+                    href={speaker.photoUrl}
+                    x={currentX - r}
+                    y={currentY - r}
+                    width={r * 2}
+                    height={r * 2}
+                    clipPath={`url(#${id}-speaker-clip-${i})`}
+                    preserveAspectRatio="xMidYMid slice"
+                  />
+                ) : (
+                  <circle cx={currentX} cy={currentY} r={r} fill="#1e293b" />
+                )}
+
+                {/* Speaker Name */}
+                <text
+                  x={currentX}
+                  y={currentY + r + 28}
+                  fill="white"
+                  fontFamily="Inter, sans-serif"
+                  fontSize={layout.fontSize}
+                  fontWeight="700"
+                  textAnchor="middle"
+                >
+                  {speaker.name}
+                </text>
+
+                {/* Speaker Position */}
+                <text
+                  x={currentX}
+                  y={currentY + r + 28 + (layout.fontSize * 1.2)}
+                  fill="white"
+                  fontFamily="Inter, sans-serif"
+                  fontSize={layout.posFontSize}
+                  fontWeight="500"
+                  textAnchor="middle"
+                >
+                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 3).map((line, li) => (
+                    <tspan
+                      key={li}
+                      x={currentX}
+                      dy={li === 0 ? 0 : layout.posFontSize * 1.3}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          })
+        ) : (
+          <text x="540" y="750" fill="white" fillOpacity="0.3" textAnchor="middle" fontSize="24" fontWeight="700">
+            PILIH PEMBICARA
+          </text>
+        )}
+
+        {/* 9. Footer Medsos Pill */}
+        <g transform="translate(70, 1235)">
+          <rect x={0} y={0} width={320} height={52} rx={26} fill="white"/>
+          
+          {/* Instagram */}
+          <g transform="translate(20, 14)" fill="#0c1e4a">
+            <path fillRule="evenodd" clipRule="evenodd" d="M12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" transform="scale(1)"/>
+          </g>
+          
+          {/* Facebook */}
+          <g transform="translate(52, 14)" fill="#0c1e4a">
+            <path d="M22 11C22 4.92 17.08 0 11 0C4.92 0 0 4.92 0 11C0 16.49 4.02 21.04 9.28 21.87V14.18H6.49V11H9.28V8.58C9.28 5.83 10.92 4.31 13.43 4.31C14.63 4.31 15.89 4.52 15.89 4.52V7.22H14.5C13.13 7.22 12.7 8.07 12.7 8.95V11H15.76L15.27 14.18H12.7V21.87C17.98 21.04 22 16.49 22 11Z" transform="scale(1)"/>
+          </g>
+          
+          {/* TikTok */}
+          <g transform="translate(84, 14)" fill="#0c1e4a">
+            <path d="M16.6 5.82C15.92 5.42 15.34 4.85 14.9 4.17C14.42 3.43 14.16 2.55 14.16 1.65V1H10.85V14.13C10.85 15.36 9.85 16.36 8.62 16.36C7.4 16.36 6.4 15.36 6.4 14.13C6.4 12.91 7.4 11.91 8.62 11.91C8.95 11.91 9.27 11.98 9.55 12.11V8.74C9.25 8.7 8.94 8.68 8.62 8.68C5.62 8.68 3.18 11.13 3.18 14.13C3.18 17.13 5.62 19.58 8.62 19.58C11.62 19.58 14.07 17.13 14.07 14.13V8.05C15.21 8.85 16.59 9.32 18.09 9.32V6C17.55 6 17.04 5.94 16.6 5.82Z" transform="scale(1)"/>
+          </g>
+          
+          {/* YouTube */}
+          <g transform="translate(116, 16)" fill="#0c1e4a">
+            <path d="M21.58 3.18C21.34 2.27 20.62 1.55 19.7 1.31C18.05 0.85 11.39 0.85 11.39 0.85C11.39 0.85 4.74 0.85 3.08 1.31C2.17 1.55 1.45 2.27 1.21 3.18C0.75 4.84 0.75 8.32 0.75 8.32C0.75 8.32 0.75 11.79 1.21 13.45C1.45 14.36 2.17 15.05 3.08 15.29C4.74 15.75 11.39 15.75 11.39 15.75C11.39 15.75 18.05 15.75 19.7 15.29C20.62 15.05 21.34 14.36 21.58 13.45C22.04 11.79 22.04 8.32 22.04 8.32C22.04 8.32 22.04 4.84 21.58 3.18ZM9.27 11.49V5.14L14.79 8.32L9.27 11.49Z" transform="scale(1)"/>
+          </g>
+          
+          {/* Username text */}
+          <text x={158} y={33} fill="#0c1e4a" fontSize="17" fontWeight="700" fontFamily="Space Grotesk, sans-serif">
+            @rri_bandaaceh
+          </text>
+        </g>
+
+        {/* 10. Info Promosi Bubble */}
+        <g transform="translate(530, 1235)">
+          <circle cx="26" cy="26" r="26" fill="#22c55e" />
+          <path transform="translate(14, 14) scale(1)" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <text
+            x="66"
+            y="20"
+            fill="white"
+            fontFamily="Inter, sans-serif"
+            fontSize="16"
+            fontWeight="700"
+          >
+            INFO PROMOSI & KERJASAMA
+          </text>
+          <text
+            x="66"
+            y="44"
+            fill="white"
+            fontFamily="Inter, sans-serif"
+            fontSize="18"
+            fontWeight="700"
+          >
+            {phoneNumber}
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}

@@ -102,12 +102,13 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeletePresenter = async (id: string, path: string | null) => {
+  const handleDeletePresenter = async (id: string, path: string | null, portraitPath?: string | null) => {
     if (!confirm('Yakin ingin menghapus presenter ini?')) return;
 
     try {
-      if (path) {
-        await supabase.storage.from('presenters').remove([path]);
+      const pathsToDelete = [path, portraitPath].filter(Boolean) as string[];
+      if (pathsToDelete.length > 0) {
+        await supabase.storage.from('presenters').remove(pathsToDelete);
       }
       const { error } = await supabase.from('presenters').delete().eq('id', id);
       if (error) throw error;
@@ -371,7 +372,7 @@ export default function SettingsPage() {
                             setEditingPresenter(p);
                             setIsModalOpen(true);
                           }}
-                          onDelete={() => handleDeletePresenter(p.id, p.background_path)}
+                          onDelete={() => handleDeletePresenter(p.id, p.background_path, p.background_portrait_path)}
                         />
                       ))}
                     </div>
@@ -401,7 +402,7 @@ export default function SettingsPage() {
                         setEditingPresenter(p);
                         setIsModalOpen(true);
                       }}
-                      onDelete={() => handleDeletePresenter(p.id, p.background_path)}
+                      onDelete={() => handleDeletePresenter(p.id, p.background_path, p.background_portrait_path)}
                     />
                   ))}
                 </div>
