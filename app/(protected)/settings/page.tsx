@@ -11,7 +11,7 @@ import { DialogForm } from '@/components/settings/DialogForm';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone } from 'lucide-react';
+import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone, Sparkles, RotateCcw, LayoutGrid } from 'lucide-react';
 
 export default function SettingsPage() {
   const [branding, setBranding] = useState<any>(null);
@@ -77,6 +77,20 @@ export default function SettingsPage() {
 
   const handleSavePhone = async () => {
     await updateBranding({ phone_number: phoneNumber });
+  };
+
+  const handleResetThumbnailDefaults = async () => {
+    if (!confirm('Apakah Anda yakin ingin menghapus settingan default thumbnail dan mengembalikan ke setelan awal sistem?')) return;
+    try {
+      const { error } = await (supabase.from('branding_settings') as any)
+        .update({ thumbnail_settings: null })
+        .eq('id', branding.id);
+      if (error) throw error;
+      setBranding({ ...branding, thumbnail_settings: null });
+      alert('Settingan default thumbnail berhasil di-reset ke setelan awal sistem.');
+    } catch (err: any) {
+      alert(`Gagal mereset: ${err.message}`);
+    }
   };
 
   const handlePresenterSubmit = async (data: any) => {
@@ -424,7 +438,81 @@ export default function SettingsPage() {
         )}
       </section>
 
-      {/* D. Admin Accounts Info */}
+      {/* D. Template Thumbnail Default */}
+      <section className="bg-white rounded-2xl border border-slate-100 p-8 space-y-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles size={18} className="text-orange-500" />
+              Settingan Template Default Thumbnail & Poster
+            </h2>
+            <p className="text-xs text-slate-500">
+              Pengaturan default generator yang otomatis dimuat saat pengguna membuka halaman generator.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {branding?.thumbnail_settings && (
+              <Button
+                variant="outline"
+                onClick={handleResetThumbnailDefaults}
+                className="text-xs text-slate-600 hover:text-red-600 border-slate-200"
+              >
+                <RotateCcw size={14} className="mr-1.5" />
+                Reset ke Default Sistem
+              </Button>
+            )}
+            <a
+              href="/generator"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <LayoutGrid size={14} />
+              Atur di Generator
+            </a>
+          </div>
+        </div>
+
+        {branding?.thumbnail_settings ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Format Default</span>
+              <span className="text-xs font-bold text-slate-800 capitalize">
+                {branding.thumbnail_settings.designFormat === 'poster' ? 'Poster (4:5)' : 'YouTube (16:9)'}
+              </span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Programa Default</span>
+              <span className="text-xs font-bold text-slate-800">
+                {branding.thumbnail_settings.selectedProgram || 'PRO 1'}
+              </span>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Warna Judul</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
+                  style={{ backgroundColor: branding.thumbnail_settings.titleColor || '#FFFFFF' }}
+                />
+                <span className="text-xs font-bold text-slate-800 font-mono">
+                  {branding.thumbnail_settings.titleColor || '#FFFFFF'}
+                </span>
+              </div>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Terakhir Disimpan</span>
+              <span className="text-xs font-medium text-slate-700 truncate block">
+                {branding.thumbnail_settings.updatedBy || 'Admin'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 flex items-center gap-2">
+            <Info size={16} className="text-orange-500 shrink-0" />
+            <span>Belum ada custom settingan template yang disimpan. Generator saat ini menggunakan setelan bawaan sistem.</span>
+          </div>
+        )}
+      </section>
+
+      {/* E. Admin Accounts Info */}
       <section className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <SettingsIcon size={120} />

@@ -9,6 +9,7 @@ import { PosterPreview } from '@/components/generator/PosterPreview';
 import { SpeakerSelect } from '@/components/generator/SpeakerSelect';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 import { 
   Loader2, 
   Download, 
@@ -28,7 +29,12 @@ import {
   EyeOff,
   Palette,
   ArrowLeftRight,
-  RotateCcw
+  RotateCcw,
+  Save,
+  Lock,
+  Check,
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
@@ -102,6 +108,7 @@ const parseIndonesianDate = (dateStr: string): string => {
 };
 
 const COLOR_PRESETS = [
+  { name: 'Hitam', hex: '#000000' },
   { name: 'Putih', hex: '#FFFFFF' },
   { name: 'Kuning', hex: '#FACC15' },
   { name: 'Oranye', hex: '#FB923C' },
@@ -154,6 +161,16 @@ export default function GeneratorPage() {
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [infoColor, setInfoColor] = useState('#FFFFFF');
   const [speakerColor, setSpeakerColor] = useState('#FFFFFF');
+
+  // Admin & Thumbnail Settings states
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [adminUnlocked, setAdminUnlocked] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminPinInput, setAdminPinInput] = useState('');
+  const [adminPinError, setAdminPinError] = useState<string | null>(null);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -208,6 +225,44 @@ export default function GeneratorPage() {
       setSpeakers(sRes.data || []);
       setBranding(bRes.data);
 
+      // Check user role
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user || null;
+        setCurrentUser(user);
+        if (user) {
+          const email = (user.email || '').toLowerCase();
+          const userMeta = (user.user_metadata || {}) as any;
+          const appMeta = (user.app_metadata || {}) as any;
+          const isUserAdmin = 
+            userMeta.role === 'admin' ||
+            appMeta.role === 'admin' ||
+            userMeta.is_admin === true ||
+            email.includes('admin');
+          setIsAdmin(Boolean(isUserAdmin));
+        }
+      } catch (authErr) {
+        console.warn('Auth user fetch note:', authErr);
+      }
+
+      // Load saved thumbnail settings defaults if available
+      const saved = (bRes.data as any)?.thumbnail_settings;
+      if (saved && typeof saved === 'object') {
+        if (saved.designFormat) setDesignFormat(saved.designFormat);
+        if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
+        if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
+        if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
+        if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
+        if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
+        if (saved.titleColor) setTitleColor(saved.titleColor);
+        if (saved.infoColor) setInfoColor(saved.infoColor);
+        if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
+        if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
+        if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
+        if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
+        if (saved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(saved.eventInfoXSpacing);
+      }
+
       // Auto-select first dialog
       if (fetchedDialogs.length > 0) {
         setSelectedDialogId(fetchedDialogs[0].id);
@@ -222,6 +277,79 @@ export default function GeneratorPage() {
       console.error('Error fetching generator data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const effectiveIsAdmin = isAdmin || adminUnlocked;
+
+  const handleSaveThumbnailSettings = async () => {
+    if (!effectiveIsAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
+
+    setIsSavingSettings(true);
+    setSaveSuccessMsg(null);
+    try {
+      const settingsPayload = {
+        designFormat,
+        selectedProgram,
+        showRriLogo,
+        showProgramLogo,
+        rriLogoPosition,
+        programLogoPosition,
+        titleColor,
+        infoColor,
+        speakerColor,
+        speakerSpacingOffset,
+        speakerYOffset,
+        eventInfoYOffset,
+        eventInfoXSpacing,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser?.email || 'Admin',
+      };
+
+      if (branding?.id) {
+        const { error } = await (supabase.from('branding_settings') as any)
+          .update({ thumbnail_settings: settingsPayload })
+          .eq('id', branding.id);
+        if (error) throw error;
+      } else {
+        const { data, error } = await (supabase.from('branding_settings') as any)
+          .insert([{ thumbnail_settings: settingsPayload }])
+          .select()
+          .single();
+        if (error) throw error;
+        setBranding(data);
+      }
+
+      setBranding((prev: any) => ({
+        ...(prev || {}),
+        thumbnail_settings: settingsPayload,
+      }));
+      setSaveSuccessMsg('Settingan default thumbnail berhasil disimpan!');
+      setTimeout(() => setSaveSuccessMsg(null), 4000);
+    } catch (err: any) {
+      alert(`Gagal menyimpan settingan thumbnail: ${err.message}`);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleUnlockAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const pin = adminPinInput.trim().toLowerCase();
+    if (pin === 'admin123' || pin === 'admin' || pin === 'rriadmin') {
+      setAdminUnlocked(true);
+      setIsAdminModalOpen(false);
+      setAdminPinInput('');
+      setAdminPinError(null);
+      // Auto-trigger save after unlocking
+      setTimeout(() => {
+        handleSaveThumbnailSettings();
+      }, 150);
+    } else {
+      setAdminPinError('Kode PIN / sandi admin salah. Silakan coba lagi.');
     }
   };
 
@@ -1047,6 +1175,60 @@ export default function GeneratorPage() {
               </div>
             </div>
 
+            {/* Settingan Default Template Card */}
+            <div className="bg-slate-900 text-white p-5 rounded-3xl space-y-3.5 shadow-xl shadow-slate-900/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-orange-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    Settingan Template Default
+                  </span>
+                </div>
+                {effectiveIsAdmin ? (
+                  <span className="text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <ShieldCheck size={11} /> Admin
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock size={11} /> Khusus Admin
+                  </span>
+                )}
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Simpan konfigurasi saat ini (posisi logo, warna teks, format, dan jarak) sebagai template default thumbnail untuk seluruh tim.
+              </p>
+
+              {saveSuccessMsg && (
+                <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 font-medium">
+                  <Check size={14} className="text-emerald-400 shrink-0" />
+                  <span>{saveSuccessMsg}</span>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                onClick={handleSaveThumbnailSettings}
+                disabled={isSavingSettings}
+                className={`w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
+                  effectiveIsAdmin
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20'
+                    : 'bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700'
+                }`}
+              >
+                {isSavingSettings ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : effectiveIsAdmin ? (
+                  <Save size={15} />
+                ) : (
+                  <Lock size={15} className="text-orange-400" />
+                )}
+                <span>
+                  {effectiveIsAdmin ? 'Simpan Settingan Thumbnail' : 'Simpan Settingan (Khusus Admin)'}
+                </span>
+              </Button>
+            </div>
+
             <div className="pt-4 space-y-2.5">
               <Button
                 onClick={handleDownload}
@@ -1122,6 +1304,21 @@ export default function GeneratorPage() {
                 </button>
               </div>
 
+              <button
+                type="button"
+                onClick={handleSaveThumbnailSettings}
+                disabled={isSavingSettings}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                  effectiveIsAdmin
+                    ? 'bg-white hover:bg-orange-50 text-orange-600 border-orange-200 shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-200'
+                }`}
+                title={effectiveIsAdmin ? 'Simpan settingan generator saat ini sebagai default' : 'Hanya admin yang bisa simpan settingan default'}
+              >
+                {effectiveIsAdmin ? <Save size={13} /> : <Lock size={13} />}
+                <span>Simpan Default</span>
+              </button>
+
               <button 
                 onClick={fetchInitialData}
                 className="text-slate-400 hover:text-orange-500 transition-colors flex items-center gap-1.5 text-xs font-bold"
@@ -1157,6 +1354,72 @@ export default function GeneratorPage() {
         </div>
 
       </div>
+
+      {/* Modal Verifikasi Hak Akses Admin */}
+      <Modal
+        isOpen={isAdminModalOpen}
+        onClose={() => {
+          setIsAdminModalOpen(false);
+          setAdminPinError(null);
+        }}
+        title="Verifikasi Hak Akses Admin"
+      >
+        <form onSubmit={handleUnlockAdmin} className="space-y-4">
+          <div className="flex items-start gap-3 p-3.5 bg-orange-50 border border-orange-200/80 rounded-2xl">
+            <div className="p-2 bg-orange-100 rounded-xl text-orange-600 shrink-0">
+              <Lock size={18} />
+            </div>
+            <div className="text-xs space-y-1 text-slate-700">
+              <p className="font-bold text-slate-900">Khusus Administrator</p>
+              <p className="text-slate-500 leading-relaxed">
+                Hanya akun Admin yang berwenang menyimpan konfigurasi default template thumbnail & poster untuk seluruh tim.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+              <KeyRound size={13} className="text-slate-400" />
+              Masukkan PIN / Sandi Admin
+            </label>
+            <Input
+              type="password"
+              placeholder="Masukkan sandi admin..."
+              value={adminPinInput}
+              onChange={(e) => {
+                setAdminPinInput(e.target.value);
+                setAdminPinError(null);
+              }}
+              className="bg-slate-50 rounded-xl"
+              autoFocus
+            />
+            {adminPinError && (
+              <p className="text-xs font-semibold text-red-500 ml-1">{adminPinError}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsAdminModalOpen(false);
+                setAdminPinError(null);
+              }}
+              className="text-xs font-bold"
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold flex items-center gap-2"
+            >
+              <ShieldCheck size={14} />
+              Verifikasi & Simpan
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </main>
   );
 }
