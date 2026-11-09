@@ -44,6 +44,10 @@ export interface ThumbnailData {
   titleXOffset?: number;
   titleYOffset?: number;
   showEventName?: boolean;
+  showHutRiLogo?: boolean;
+  rriLogoTheme?: 'white' | 'dark';
+  programLogoTheme?: 'white' | 'dark';
+  hutRiLogoTheme?: 'white' | 'dark';
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
   eventInfoYOffset?: number;
@@ -69,6 +73,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     hutRiLogoUrl,
     showRriLogo = true,
     showProgramLogo = true,
+    showHutRiLogo,
     rriLogoPosition = 'left',
     programLogoPosition = 'right',
     titleColor = '#FFFFFF',
@@ -179,8 +184,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           />
         )}
 
-        {/* 3.5 Logo HUT RI (Shown in August if available) */}
-        {isAugust && hutRiLogoUrl && (
+        {/* 3.5 Logo HUT RI (Shown if enabled or in August) */}
+        {(showHutRiLogo ?? isAugust) && hutRiLogoUrl && (
           <image href={hutRiLogoUrl} x="720" y="25" width="340" height="110" preserveAspectRatio="xMaxYMid meet" />
         )}
 

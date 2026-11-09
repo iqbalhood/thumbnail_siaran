@@ -37,6 +37,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     hutRiLogoUrl,
     showRriLogo = true,
     showProgramLogo = true,
+    showHutRiLogo,
     rriLogoPosition = 'left',
     programLogoPosition = 'right',
     titleColor = '#FFFFFF',
@@ -211,8 +212,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           />
         )}
 
-        {/* 3.5 Logo HUT RI (Shown in August if available) */}
-        {isAugust && hutRiLogoUrl && (
+        {/* 3.5 Logo HUT RI (Shown if enabled or in August) */}
+        {(showHutRiLogo ?? isAugust) && hutRiLogoUrl && (
           <image href={hutRiLogoUrl} x="420" y="45" width="280" height="95" preserveAspectRatio="xMidYMid meet" />
         )}
 

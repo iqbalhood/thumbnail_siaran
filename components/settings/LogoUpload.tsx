@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { uploadFile } from '@/lib/storage/upload';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { Loader2, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, Trash2, Image as ImageIcon, Sun, Moon } from 'lucide-react';
 
 interface LogoUploadProps {
   label: string;
+  sublabel?: string;
+  variant?: 'white' | 'dark';
   currentUrl: string | null;
   currentPath: string | null;
   onUploadSuccess: (url: string, path: string) => void;
@@ -17,6 +19,8 @@ interface LogoUploadProps {
 
 export function LogoUpload({
   label,
+  sublabel,
+  variant = 'white',
   currentUrl,
   currentPath,
   onUploadSuccess,
@@ -38,7 +42,7 @@ export function LogoUpload({
 
     setIsUploading(true);
     try {
-      const fileName = `${label.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+      const fileName = `${label.toLowerCase().replace(/\s+/g, '-')}-${variant}-${Date.now()}`;
       const { publicUrl, storagePath } = await uploadFile(bucket, fileName, file);
       
       onUploadSuccess(publicUrl, storagePath);
@@ -50,7 +54,7 @@ export function LogoUpload({
   };
 
   const handleDelete = async () => {
-    if (!currentPath || !confirm(`Hapus logo ${label}?`)) return;
+    if (!currentPath || !confirm(`Hapus logo ${label} (${variant === 'dark' ? 'Dark' : 'White'})?`)) return;
 
     setIsDeleting(true);
     try {
@@ -63,19 +67,44 @@ export function LogoUpload({
     }
   };
 
+  const isDarkVariant = variant === 'dark';
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-      <h3 className="text-sm font-semibold text-slate-900">{label}</h3>
+    <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs">
+      <div className="flex items-center justify-between gap-1">
+        <div className="min-w-0">
+          <h3 className="text-xs font-bold text-slate-800 truncate" title={label}>{label}</h3>
+          {sublabel && <p className="text-[10px] text-slate-400">{sublabel}</p>}
+        </div>
+        <span
+          className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+            isDarkVariant
+              ? 'bg-slate-800 text-slate-200 border-slate-700'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+          }`}
+        >
+          {isDarkVariant ? <Moon size={10} /> : <Sun size={10} />}
+          {isDarkVariant ? 'Dark' : 'White'}
+        </span>
+      </div>
       
-      <div className="relative aspect-[3/1] bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden group border border-slate-800">
+      <div
+        className={`relative aspect-[3/1] rounded-lg flex items-center justify-center overflow-hidden group border transition-all ${
+          isDarkVariant
+            ? 'bg-slate-100 border-slate-200 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:12px_12px]'
+            : 'bg-slate-900 border-slate-800'
+        }`}
+      >
         {currentUrl ? (
           <>
             <img 
               src={currentUrl} 
-              alt={label} 
-              className="max-w-[80%] max-h-[80%] object-contain"
+              alt={`${label} (${variant})`} 
+              className="max-w-[85%] max-h-[85%] object-contain"
             />
-            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 ${
+              isDarkVariant ? 'bg-slate-900/50' : 'bg-slate-900/60'
+            }`}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -88,9 +117,9 @@ export function LogoUpload({
             </div>
           </>
         ) : (
-          <div className="text-slate-500 flex flex-col items-center gap-2">
-            <ImageIcon size={24} />
-            <span className="text-[10px] uppercase font-bold tracking-wider">Belum ada logo</span>
+          <div className="text-slate-400 flex flex-col items-center gap-1">
+            <ImageIcon size={20} />
+            <span className="text-[9px] uppercase font-bold tracking-wider">Belum ada logo</span>
           </div>
         )}
         
@@ -110,9 +139,9 @@ export function LogoUpload({
           disabled={isUploading}
         />
         <Button
-          className="w-full h-9 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-2"
+          className="w-full h-8 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5"
         >
-          <Upload size={14} />
+          <Upload size={13} />
           {currentUrl ? 'Ganti Logo' : 'Upload Logo'}
         </Button>
       </div>

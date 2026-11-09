@@ -35,7 +35,9 @@ import {
   Check,
   ShieldCheck,
   KeyRound,
-  Move
+  Move,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
@@ -174,9 +176,17 @@ export default function GeneratorPage() {
   // Logo visibility & position controls
   const [showRriLogo, setShowRriLogo] = useState(true);
   const [showProgramLogo, setShowProgramLogo] = useState(true);
+  const [showHutRiLogo, setShowHutRiLogo] = useState<boolean>(() => 
+    new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS')
+  );
   const [showEventName, setShowEventName] = useState(true);
   const [rriLogoPosition, setRriLogoPosition] = useState<'left' | 'right'>('left');
   const [programLogoPosition, setProgramLogoPosition] = useState<'left' | 'right'>('right');
+
+  // Logo Theme (White vs Dark)
+  const [rriLogoTheme, setRriLogoTheme] = useState<'white' | 'dark'>('white');
+  const [programLogoTheme, setProgramLogoTheme] = useState<'white' | 'dark'>('white');
+  const [hutRiLogoTheme, setHutRiLogoTheme] = useState<'white' | 'dark'>('white');
 
   // Text color customization
   const [titleColor, setTitleColor] = useState('#FFFFFF');
@@ -263,9 +273,13 @@ export default function GeneratorPage() {
         if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
         if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
         if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
+        if (saved.showHutRiLogo !== undefined) setShowHutRiLogo(saved.showHutRiLogo);
         if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
         if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
         if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
+        if (saved.rriLogoTheme) setRriLogoTheme(saved.rriLogoTheme);
+        if (saved.programLogoTheme) setProgramLogoTheme(saved.programLogoTheme);
+        if (saved.hutRiLogoTheme) setHutRiLogoTheme(saved.hutRiLogoTheme);
         if (saved.titleColor) setTitleColor(saved.titleColor);
         if (saved.infoColor) setInfoColor(saved.infoColor);
         if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
@@ -308,9 +322,13 @@ export default function GeneratorPage() {
         selectedProgram,
         showRriLogo,
         showProgramLogo,
+        showHutRiLogo,
         showEventName,
         rriLogoPosition,
         programLogoPosition,
+        rriLogoTheme,
+        programLogoTheme,
+        hutRiLogoTheme,
         titleColor,
         infoColor,
         speakerColor,
@@ -391,22 +409,51 @@ export default function GeneratorPage() {
 
   const portraitBgUrl = customPortraitBg || selectedPresenter?.background_portrait_url || null;
 
+  const brandingAny = branding as any;
+
+  // Resolve Logo URLs based on dark/white theme selection (with clean fallbacks)
+  const resolvedRriLogoUrl = rriLogoTheme === 'dark'
+    ? (brandingAny?.rri_logo_dark_url || branding?.rri_logo_url || null)
+    : (branding?.rri_logo_url || brandingAny?.rri_logo_dark_url || null);
+
+  const resolvedProgramLogoUrl = (() => {
+    if (selectedProgram === 'PRO 2') {
+      return programLogoTheme === 'dark'
+        ? (brandingAny?.pro2_logo_dark_url || branding?.pro2_logo_url || null)
+        : (branding?.pro2_logo_url || brandingAny?.pro2_logo_dark_url || null);
+    }
+    if (selectedProgram === 'PRO 4') {
+      return programLogoTheme === 'dark'
+        ? (brandingAny?.pro4_logo_dark_url || branding?.pro4_logo_url || null)
+        : (branding?.pro4_logo_url || brandingAny?.pro4_logo_dark_url || null);
+    }
+    return programLogoTheme === 'dark'
+      ? (brandingAny?.pro1_logo_dark_url || branding?.pro1_logo_url || null)
+      : (branding?.pro1_logo_url || brandingAny?.pro1_logo_dark_url || null);
+  })();
+
+  const resolvedHutRiLogoUrl = hutRiLogoTheme === 'dark'
+    ? (brandingAny?.hut_ri_logo_dark_url || branding?.hut_ri_logo_url || null)
+    : (branding?.hut_ri_logo_url || brandingAny?.hut_ri_logo_dark_url || null);
+
   const basePreviewData = {
     title,
     eventName,
     date,
     time,
     speakers: resolvedSpeakers,
-    rriLogoUrl: branding?.rri_logo_url || null,
-    programLogoUrl: selectedProgram === 'PRO 2' ? (branding?.pro2_logo_url || null) : 
-                    selectedProgram === 'PRO 4' ? (branding?.pro4_logo_url || null) : 
-                    (branding?.pro1_logo_url || null),
-    hutRiLogoUrl: branding?.hut_ri_logo_url || null,
+    rriLogoUrl: resolvedRriLogoUrl,
+    programLogoUrl: resolvedProgramLogoUrl,
+    hutRiLogoUrl: resolvedHutRiLogoUrl,
     showRriLogo,
     showProgramLogo,
+    showHutRiLogo,
     showEventName,
     rriLogoPosition,
     programLogoPosition,
+    rriLogoTheme,
+    programLogoTheme,
+    hutRiLogoTheme,
     titleColor,
     infoColor,
     speakerColor,
@@ -760,28 +807,56 @@ export default function GeneratorPage() {
                 </div>
               </div>
 
-              {/* Pengaturan Logo RRI & Programa */}
+              {/* Pengaturan Logo RRI & Programa & HUT RI */}
               <div className="space-y-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles size={13} className="text-slate-400" />
-                    Posisi & Tampilan Logo
+                    Posisi & Varian Logo
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRriLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
-                      setProgramLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
-                    }}
-                    className="text-[11px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-orange-50 border border-orange-200/60"
-                    title="Tukar posisi Logo RRI dan Logo Programa"
-                  >
-                    <ArrowLeftRight size={12} />
-                    Tukar Posisi
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRriLogoTheme('white');
+                        setProgramLogoTheme('white');
+                        setHutRiLogoTheme('white');
+                      }}
+                      className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 border border-slate-200"
+                      title="Setel semua logo ke varian Putih (White)"
+                    >
+                      <Sun size={11} className="text-amber-500" />
+                      Semua Putih
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRriLogoTheme('dark');
+                        setProgramLogoTheme('dark');
+                        setHutRiLogoTheme('dark');
+                      }}
+                      className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 border border-slate-200"
+                      title="Setel semua logo ke varian Gelap (Dark)"
+                    >
+                      <Moon size={11} className="text-indigo-500" />
+                      Semua Dark
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRriLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
+                        setProgramLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
+                      }}
+                      className="text-[11px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-orange-50 border border-orange-200/60"
+                      title="Tukar posisi Logo RRI dan Logo Programa"
+                    >
+                      <ArrowLeftRight size={12} />
+                      Tukar
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                   {/* Logo RRI */}
                   <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
@@ -799,31 +874,64 @@ export default function GeneratorPage() {
                         {showRriLogo ? 'Tampil' : 'Sembunyi'}
                       </button>
                     </div>
+
                     {showRriLogo && (
-                      <div className="flex items-center gap-1 pt-1 border-t border-slate-200/60">
-                        <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
-                        <button
-                          type="button"
-                          onClick={() => setRriLogoPosition('left')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                            rriLogoPosition === 'left'
-                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                              : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                        >
-                          Kiri
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRriLogoPosition('right')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                            rriLogoPosition === 'right'
-                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                              : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                        >
-                          Kanan
-                        </button>
+                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                        {/* Posisi */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
+                          <button
+                            type="button"
+                            onClick={() => setRriLogoPosition('left')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                              rriLogoPosition === 'left'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            Kiri
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRriLogoPosition('right')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                              rriLogoPosition === 'right'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            Kanan
+                          </button>
+                        </div>
+
+                        {/* Varian Tema (Putih / Dark) */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
+                          <button
+                            type="button"
+                            onClick={() => setRriLogoTheme('white')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                              rriLogoTheme === 'white'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            <Sun size={10} className="text-amber-500" />
+                            Putih
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRriLogoTheme('dark')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                              rriLogoTheme === 'dark'
+                                ? 'bg-slate-900 text-white shadow-xs border border-slate-800'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            <Moon size={10} className="text-indigo-400" />
+                            Dark
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -845,31 +953,117 @@ export default function GeneratorPage() {
                         {showProgramLogo ? 'Tampil' : 'Sembunyi'}
                       </button>
                     </div>
+
                     {showProgramLogo && (
-                      <div className="flex items-center gap-1 pt-1 border-t border-slate-200/60">
-                        <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
-                        <button
-                          type="button"
-                          onClick={() => setProgramLogoPosition('left')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                            programLogoPosition === 'left'
-                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                              : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                        >
-                          Kiri
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setProgramLogoPosition('right')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
-                            programLogoPosition === 'right'
-                              ? 'bg-white text-orange-600 shadow-sm border border-slate-200'
-                              : 'text-slate-500 hover:text-slate-800'
-                          }`}
-                        >
-                          Kanan
-                        </button>
+                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                        {/* Posisi */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
+                          <button
+                            type="button"
+                            onClick={() => setProgramLogoPosition('left')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                              programLogoPosition === 'left'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            Kiri
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProgramLogoPosition('right')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                              programLogoPosition === 'right'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            Kanan
+                          </button>
+                        </div>
+
+                        {/* Varian Tema (Putih / Dark) */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
+                          <button
+                            type="button"
+                            onClick={() => setProgramLogoTheme('white')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                              programLogoTheme === 'white'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            <Sun size={10} className="text-amber-500" />
+                            Putih
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProgramLogoTheme('dark')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                              programLogoTheme === 'dark'
+                                ? 'bg-slate-900 text-white shadow-xs border border-slate-800'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            <Moon size={10} className="text-indigo-400" />
+                            Dark
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Logo Kemerdekaan / HUT RI */}
+                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700">Logo HUT RI</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowHutRiLogo(!showHutRiLogo)}
+                        className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                          showHutRiLogo 
+                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                            : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                        }`}
+                      >
+                        {showHutRiLogo ? <Eye size={12} /> : <EyeOff size={12} />}
+                        {showHutRiLogo ? 'Tampil' : 'Sembunyi'}
+                      </button>
+                    </div>
+
+                    {showHutRiLogo && (
+                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                        {/* Varian Tema (Putih / Dark) */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
+                          <button
+                            type="button"
+                            onClick={() => setHutRiLogoTheme('white')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                              hutRiLogoTheme === 'white'
+                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            <Sun size={10} className="text-amber-500" />
+                            Putih
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setHutRiLogoTheme('dark')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                              hutRiLogoTheme === 'dark'
+                                ? 'bg-slate-900 text-white shadow-xs border border-slate-800'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            <Moon size={10} className="text-indigo-400" />
+                            Dark
+                          </button>
+                        </div>
+                        <p className="text-[9px] text-slate-400 leading-tight">Posisi otomatis di sudut kanan atas</p>
                       </div>
                     )}
                   </div>

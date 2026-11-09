@@ -11,7 +11,7 @@ import { DialogForm } from '@/components/settings/DialogForm';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone, Sparkles, RotateCcw, LayoutGrid } from 'lucide-react';
+import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone, Sparkles, RotateCcw, LayoutGrid, Sun, Moon } from 'lucide-react';
 
 export default function SettingsPage() {
   const [branding, setBranding] = useState<any>(null);
@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [dialogs, setDialogs] = useState<any[]>([]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [logoTab, setLogoTab] = useState<'all' | 'white' | 'dark'>('all');
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -187,53 +188,244 @@ export default function SettingsPage() {
         <p className="text-sm text-slate-500">Kelola logo dan background presenter untuk generator thumbnail.</p>
       </header>
 
-      {/* A. Logo Header Section */}
+      {/* A. Logo Header Section (White & Dark) */}
       <section className="space-y-6">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-slate-900">Logo Header</h2>
-          <div className="h-px flex-1 bg-slate-100" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              Logo Header (Varian White & Dark)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Upload varian Putih (untuk background gelap) dan varian Dark (untuk background terang/putih).
+            </p>
+          </div>
+          
+          {/* Tabs Filter */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl shrink-0">
+            <button
+              type="button"
+              onClick={() => setLogoTab('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                logoTab === 'all'
+                  ? 'bg-white text-orange-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Semua Logo
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogoTab('white')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                logoTab === 'white'
+                  ? 'bg-white text-orange-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Sun size={12} />
+              White / Terang
+            </button>
+            <button
+              type="button"
+              onClick={() => setLogoTab('dark')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                logoTab === 'dark'
+                  ? 'bg-white text-orange-600 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Moon size={12} />
+              Dark / Gelap
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          <LogoUpload
-            label="Logo RRI Banda Aceh"
-            currentUrl={branding?.rri_logo_url}
-            currentPath={branding?.rri_logo_path}
-            bucket="logos"
-            onUploadSuccess={(url, path) => updateBranding({ rri_logo_url: url, rri_logo_path: path })}
-            onDeleteSuccess={() => updateBranding({ rri_logo_url: null, rri_logo_path: null })}
-          />
-          <LogoUpload
-            label="Logo PRO 1 97.7 FM"
-            currentUrl={branding?.pro1_logo_url}
-            currentPath={branding?.pro1_logo_path}
-            bucket="logos"
-            onUploadSuccess={(url, path) => updateBranding({ pro1_logo_url: url, pro1_logo_path: path })}
-            onDeleteSuccess={() => updateBranding({ pro1_logo_url: null, pro1_logo_path: null })}
-          />
-          <LogoUpload
-            label="Logo PRO 2 92.6 FM"
-            currentUrl={branding?.pro2_logo_url}
-            currentPath={branding?.pro2_logo_path}
-            bucket="logos"
-            onUploadSuccess={(url, path) => updateBranding({ pro2_logo_url: url, pro2_logo_path: path })}
-            onDeleteSuccess={() => updateBranding({ pro2_logo_url: null, pro2_logo_path: null })}
-          />
-          <LogoUpload
-            label="Logo PRO 4 87.6 FM"
-            currentUrl={branding?.pro4_logo_url}
-            currentPath={branding?.pro4_logo_path}
-            bucket="logos"
-            onUploadSuccess={(url, path) => updateBranding({ pro4_logo_url: url, pro4_logo_path: path })}
-            onDeleteSuccess={() => updateBranding({ pro4_logo_url: null, pro4_logo_path: null })}
-          />
-          <LogoUpload
-            label="Logo HUT RI (Agustus)"
-            currentUrl={branding?.hut_ri_logo_url}
-            currentPath={branding?.hut_ri_logo_path}
-            bucket="logos"
-            onUploadSuccess={(url, path) => updateBranding({ hut_ri_logo_url: url, hut_ri_logo_path: path })}
-            onDeleteSuccess={() => updateBranding({ hut_ri_logo_url: null, hut_ri_logo_path: null })}
-          />
+
+        {/* Logo Cards / Groups */}
+        <div className="space-y-6">
+          {/* 1. Logo RRI Banda Aceh */}
+          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                Logo RRI Banda Aceh
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400">Logo stasiun utama</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(logoTab === 'all' || logoTab === 'white') && (
+                <LogoUpload
+                  label="Logo RRI"
+                  sublabel="Varian White / Terang (PNG transparan)"
+                  variant="white"
+                  currentUrl={branding?.rri_logo_url}
+                  currentPath={branding?.rri_logo_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ rri_logo_url: url, rri_logo_path: path })}
+                  onDeleteSuccess={() => updateBranding({ rri_logo_url: null, rri_logo_path: null })}
+                />
+              )}
+              {(logoTab === 'all' || logoTab === 'dark') && (
+                <LogoUpload
+                  label="Logo RRI"
+                  sublabel="Varian Dark / Gelap (PNG transparan)"
+                  variant="dark"
+                  currentUrl={branding?.rri_logo_dark_url}
+                  currentPath={branding?.rri_logo_dark_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ rri_logo_dark_url: url, rri_logo_dark_path: path })}
+                  onDeleteSuccess={() => updateBranding({ rri_logo_dark_url: null, rri_logo_dark_path: null })}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* 2. Logo PRO 1 97.7 FM */}
+          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                Logo Programa 1 (PRO 1 97.7 FM)
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400">Kanal Berita & Informasi</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(logoTab === 'all' || logoTab === 'white') && (
+                <LogoUpload
+                  label="Logo PRO 1"
+                  sublabel="Varian White / Terang (PNG transparan)"
+                  variant="white"
+                  currentUrl={branding?.pro1_logo_url}
+                  currentPath={branding?.pro1_logo_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ pro1_logo_url: url, pro1_logo_path: path })}
+                  onDeleteSuccess={() => updateBranding({ pro1_logo_url: null, pro1_logo_path: null })}
+                />
+              )}
+              {(logoTab === 'all' || logoTab === 'dark') && (
+                <LogoUpload
+                  label="Logo PRO 1"
+                  sublabel="Varian Dark / Gelap (PNG transparan)"
+                  variant="dark"
+                  currentUrl={branding?.pro1_logo_dark_url}
+                  currentPath={branding?.pro1_logo_dark_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ pro1_logo_dark_url: url, pro1_logo_dark_path: path })}
+                  onDeleteSuccess={() => updateBranding({ pro1_logo_dark_url: null, pro1_logo_dark_path: null })}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* 3. Logo PRO 2 92.6 FM */}
+          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                Logo Programa 2 (PRO 2 92.6 FM)
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400">Kanal Kreativitas Anak Muda</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(logoTab === 'all' || logoTab === 'white') && (
+                <LogoUpload
+                  label="Logo PRO 2"
+                  sublabel="Varian White / Terang (PNG transparan)"
+                  variant="white"
+                  currentUrl={branding?.pro2_logo_url}
+                  currentPath={branding?.pro2_logo_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ pro2_logo_url: url, pro2_logo_path: path })}
+                  onDeleteSuccess={() => updateBranding({ pro2_logo_url: null, pro2_logo_path: null })}
+                />
+              )}
+              {(logoTab === 'all' || logoTab === 'dark') && (
+                <LogoUpload
+                  label="Logo PRO 2"
+                  sublabel="Varian Dark / Gelap (PNG transparan)"
+                  variant="dark"
+                  currentUrl={branding?.pro2_logo_dark_url}
+                  currentPath={branding?.pro2_logo_dark_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ pro2_logo_dark_url: url, pro2_logo_dark_path: path })}
+                  onDeleteSuccess={() => updateBranding({ pro2_logo_dark_url: null, pro2_logo_dark_path: null })}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* 4. Logo PRO 4 87.6 FM */}
+          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-violet-500" />
+                Logo Programa 4 (PRO 4 87.6 FM)
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400">Kanal Budaya & Musik Tradisional</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(logoTab === 'all' || logoTab === 'white') && (
+                <LogoUpload
+                  label="Logo PRO 4"
+                  sublabel="Varian White / Terang (PNG transparan)"
+                  variant="white"
+                  currentUrl={branding?.pro4_logo_url}
+                  currentPath={branding?.pro4_logo_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ pro4_logo_url: url, pro4_logo_path: path })}
+                  onDeleteSuccess={() => updateBranding({ pro4_logo_url: null, pro4_logo_path: null })}
+                />
+              )}
+              {(logoTab === 'all' || logoTab === 'dark') && (
+                <LogoUpload
+                  label="Logo PRO 4"
+                  sublabel="Varian Dark / Gelap (PNG transparan)"
+                  variant="dark"
+                  currentUrl={branding?.pro4_logo_dark_url}
+                  currentPath={branding?.pro4_logo_dark_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ pro4_logo_dark_url: url, pro4_logo_dark_path: path })}
+                  onDeleteSuccess={() => updateBranding({ pro4_logo_dark_url: null, pro4_logo_dark_path: null })}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* 5. Logo HUT RI (Kemerdekaan) */}
+          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                Logo Kemerdekaan (HUT RI)
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400">Logo peringatan kemerdekaan</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(logoTab === 'all' || logoTab === 'white') && (
+                <LogoUpload
+                  label="Logo HUT RI"
+                  sublabel="Varian White / Terang (PNG transparan)"
+                  variant="white"
+                  currentUrl={branding?.hut_ri_logo_url}
+                  currentPath={branding?.hut_ri_logo_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ hut_ri_logo_url: url, hut_ri_logo_path: path })}
+                  onDeleteSuccess={() => updateBranding({ hut_ri_logo_url: null, hut_ri_logo_path: null })}
+                />
+              )}
+              {(logoTab === 'all' || logoTab === 'dark') && (
+                <LogoUpload
+                  label="Logo HUT RI"
+                  sublabel="Varian Dark / Gelap (PNG transparan)"
+                  variant="dark"
+                  currentUrl={branding?.hut_ri_logo_dark_url}
+                  currentPath={branding?.hut_ri_logo_dark_path}
+                  bucket="logos"
+                  onUploadSuccess={(url, path) => updateBranding({ hut_ri_logo_dark_url: url, hut_ri_logo_dark_path: path })}
+                  onDeleteSuccess={() => updateBranding({ hut_ri_logo_dark_url: null, hut_ri_logo_dark_path: null })}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
