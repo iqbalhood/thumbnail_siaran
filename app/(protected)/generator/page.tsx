@@ -192,6 +192,7 @@ export default function GeneratorPage() {
   const [titleColor, setTitleColor] = useState('#FFFFFF');
   const [infoColor, setInfoColor] = useState('#FFFFFF');
   const [speakerColor, setSpeakerColor] = useState('#FFFFFF');
+  const [promoColor, setPromoColor] = useState('#FFFFFF');
 
   // Title Position Offsets (Horizontal & Vertikal)
   const [titleXOffset, setTitleXOffset] = useState<number>(0);
@@ -253,6 +254,7 @@ export default function GeneratorPage() {
       titleColor: '#FFFFFF',
       infoColor: '#FFFFFF',
       speakerColor: '#FFFFFF',
+      promoColor: '#FFFFFF',
       titleXOffset: 0,
       titleYOffset: 0,
       speakerSpacingOffset: 0,
@@ -313,6 +315,7 @@ export default function GeneratorPage() {
     setTitleColor(merged.titleColor || '#FFFFFF');
     setInfoColor(merged.infoColor || '#FFFFFF');
     setSpeakerColor(merged.speakerColor || '#FFFFFF');
+    setPromoColor(merged.promoColor || '#FFFFFF');
     setTitleXOffset(merged.titleXOffset !== undefined ? merged.titleXOffset : 0);
     setTitleYOffset(merged.titleYOffset !== undefined ? merged.titleYOffset : 0);
     setSpeakerSpacingOffset(merged.speakerSpacingOffset !== undefined ? merged.speakerSpacingOffset : 0);
@@ -429,6 +432,7 @@ export default function GeneratorPage() {
         titleColor,
         infoColor,
         speakerColor,
+        promoColor,
         titleXOffset,
         titleYOffset,
         speakerSpacingOffset,
@@ -651,6 +655,7 @@ export default function GeneratorPage() {
     titleColor,
     infoColor,
     speakerColor,
+    promoColor,
     titleXOffset,
     titleYOffset,
     speakerSpacingOffset,
@@ -1295,6 +1300,7 @@ export default function GeneratorPage() {
                     setTitleColor('#FFFFFF');
                     setInfoColor('#FFFFFF');
                     setSpeakerColor('#FFFFFF');
+                    setPromoColor('#FFFFFF');
                   }}
                   className="text-xs font-bold text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-50"
                   title="Kembalikan semua warna teks ke Putih"
@@ -1401,6 +1407,41 @@ export default function GeneratorPage() {
                         type="color"
                         value={speakerColor}
                         onChange={(e) => setSpeakerColor(e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
+                        🎨
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 4. Info Promosi & Kerjasama */}
+                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: promoColor }} />
+                    <span className="text-xs font-semibold text-slate-700">Info & Kerjasama</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {COLOR_PRESETS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => setPromoColor(c.hex)}
+                        className={`w-5 h-5 rounded-full border transition-all ${
+                          promoColor.toUpperCase() === c.hex.toUpperCase()
+                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
+                            : 'border-slate-300 hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: c.hex }}
+                        title={c.name}
+                      />
+                    ))}
+                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
+                      <input
+                        type="color"
+                        value={promoColor}
+                        onChange={(e) => setPromoColor(e.target.value)}
                         className="sr-only"
                       />
                       <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">

@@ -42,6 +42,7 @@ export interface ThumbnailData {
   titleColor?: string;
   infoColor?: string;
   speakerColor?: string;
+  promoColor?: string;
   titleXOffset?: number;
   titleYOffset?: number;
   showEventName?: boolean;
@@ -80,6 +81,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     titleColor = '#FFFFFF',
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
+    promoColor = '#FFFFFF',
     titleXOffset = 0,
     titleYOffset = 0,
     showEventName = true,
@@ -323,16 +325,14 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           <text x="380" y="450" fill="white" fillOpacity="0.3" textAnchor="middle" fontSize="20" fontWeight="700">PILIH PEMBICARA</text>
         )}
 
-        {/* 9. Footer Medsos Container (Official RRI Banda Aceh banner asset) */}
-        <g transform="translate(60, 618)">
-          {/* White rounded pill background */}
-          <rect x={0} y={0} width={550} height={48} rx={24} fill="white" />
+        {/* 9. Footer Medsos Container (Official RRI Banda Aceh banner asset - tight without extra background padding) */}
+        <g transform="translate(60, 627)">
           <image
             href={RRI_SOCIAL_MEDIA_IMAGE_BASE64}
-            x={15}
-            y={5}
-            width={520}
-            height={38}
+            x={0}
+            y={0}
+            width={560}
+            height={29}
             preserveAspectRatio="xMidYMid meet"
           />
         </g>
@@ -344,7 +344,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           <text
             x="54"
             y="16"
-            fill="white"
+            fill={promoColor}
             fontFamily="Inter, sans-serif"
             fontSize="14"
             fontWeight="700"
@@ -354,7 +354,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
           <text
             x="54"
             y="36"
-            fill="white"
+            fill={promoColor}
             fontFamily="Inter, sans-serif"
             fontSize="16"
             fontWeight="700"

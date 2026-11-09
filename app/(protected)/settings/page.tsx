@@ -746,6 +746,7 @@ export default function SettingsPage() {
               const titleColorVal = saved?.titleColor || '#FFFFFF';
               const infoColorVal = saved?.infoColor || '#FFFFFF';
               const speakerColorVal = saved?.speakerColor || '#FFFFFF';
+              const promoColorVal = saved?.promoColor || '#FFFFFF';
               const rriTheme = saved?.rriLogoTheme || 'white';
               const progTheme = saved?.programLogoTheme || 'white';
               const showEvent = saved?.showEventName !== undefined ? saved.showEventName : true;
@@ -841,6 +842,11 @@ export default function SettingsPage() {
                           className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
                           style={{ backgroundColor: speakerColorVal }}
                           title={`Narasumber: ${speakerColorVal}`}
+                        />
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
+                          style={{ backgroundColor: promoColorVal }}
+                          title={`Info & Kerjasama: ${promoColorVal}`}
                         />
                         <span className="text-[11px] font-bold text-slate-800 font-mono ml-0.5">
                           {titleColorVal}

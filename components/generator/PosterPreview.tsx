@@ -44,6 +44,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     titleColor = '#FFFFFF',
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
+    promoColor = '#FFFFFF',
     titleXOffset = 0,
     titleYOffset = 0,
     showEventName = true,
@@ -395,16 +396,14 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           </text>
         )}
 
-        {/* 9. Footer Medsos Container (Official RRI Banda Aceh banner asset) */}
-        <g transform="translate(50, 1240)">
-          {/* White rounded pill background */}
-          <rect x={0} y={0} width={530} height={48} rx={24} fill="white"/>
+        {/* 9. Footer Medsos Container (Official RRI Banda Aceh banner asset - tight without extra background padding) */}
+        <g transform="translate(50, 1250)">
           <image
             href={RRI_SOCIAL_MEDIA_IMAGE_BASE64}
-            x={15}
-            y={5}
-            width={500}
-            height={38}
+            x={0}
+            y={0}
+            width={530}
+            height={27}
             preserveAspectRatio="xMidYMid meet"
           />
         </g>
@@ -416,7 +415,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           <text
             x="60"
             y="18"
-            fill="white"
+            fill={promoColor}
             fontFamily="Inter, sans-serif"
             fontSize="15"
             fontWeight="700"
@@ -426,7 +425,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           <text
             x="60"
             y="40"
-            fill="white"
+            fill={promoColor}
             fontFamily="Inter, sans-serif"
             fontSize="17"
             fontWeight="700"
