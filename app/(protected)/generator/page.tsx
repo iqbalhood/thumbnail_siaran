@@ -343,7 +343,7 @@ export default function GeneratorPage() {
         const firstDialog = fetchedDialogs[0];
         setSelectedDialogId(firstDialog.id);
         setEventName(firstDialog.name);
-        applyDialogSettings(firstDialog.id, firstDialog.name, bRes.data?.thumbnail_settings);
+        applyDialogSettings(firstDialog.id, firstDialog.name, (bRes.data as any)?.thumbnail_settings);
       } else {
         // Fallback to root thumbnail_settings if no dialogs
         const saved = (bRes.data as any)?.thumbnail_settings;
