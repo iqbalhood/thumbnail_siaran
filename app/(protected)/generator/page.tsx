@@ -223,12 +223,84 @@ export default function GeneratorPage() {
     fetchInitialData();
   }, []);
 
-  // When dialog changes, auto-select first presenter and set eventName
+  // Apply saved or inferred settings for a specific Dialog / Acara
+  const applyDialogSettings = (
+    dialogId: string, 
+    dialogName: string, 
+    customSettingsSource?: any
+  ) => {
+    const rootSettings = customSettingsSource || (branding as any)?.thumbnail_settings;
+    
+    // 1. Check if dialog has specific saved preset settings (by ID or by Name)
+    const dialogsMap = (rootSettings && typeof rootSettings === 'object') ? (rootSettings.dialogs || {}) : {};
+    const saved = dialogsMap[dialogId] || dialogsMap[dialogName];
+
+    if (saved && typeof saved === 'object') {
+      if (saved.designFormat) setDesignFormat(saved.designFormat);
+      if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
+      if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
+      if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
+      if (saved.showHutRiLogo !== undefined) setShowHutRiLogo(saved.showHutRiLogo);
+      if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
+      if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
+      if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
+      if (saved.rriLogoTheme) setRriLogoTheme(saved.rriLogoTheme);
+      if (saved.programLogoTheme) setProgramLogoTheme(saved.programLogoTheme);
+      if (saved.hutRiLogoTheme) setHutRiLogoTheme(saved.hutRiLogoTheme);
+      if (saved.titleColor) setTitleColor(saved.titleColor);
+      if (saved.infoColor) setInfoColor(saved.infoColor);
+      if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
+      if (saved.titleXOffset !== undefined) setTitleXOffset(saved.titleXOffset);
+      if (saved.titleYOffset !== undefined) setTitleYOffset(saved.titleYOffset);
+      if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
+      if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
+      if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
+      if (saved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(saved.eventInfoXSpacing);
+      return;
+    }
+
+    // 2. If no custom settings for this dialog, infer program from dialog name
+    const dUpper = (dialogName || '').toUpperCase();
+    if (dUpper.includes('PRO 2') || dUpper.includes('PRO2') || dUpper.includes('OSSI')) {
+      setSelectedProgram('PRO 2');
+    } else if (dUpper.includes('PRO 4') || dUpper.includes('PRO4')) {
+      setSelectedProgram('PRO 4');
+    } else if (dUpper.includes('PRO 1') || dUpper.includes('PRO1') || dUpper.includes('MENYAPA')) {
+      setSelectedProgram('PRO 1');
+    }
+
+    // 3. Fallback to global defaults for colors & alignment if available
+    const globalSaved = rootSettings?.global || (rootSettings?.titleColor ? rootSettings : null);
+    if (globalSaved && typeof globalSaved === 'object') {
+      if (globalSaved.designFormat) setDesignFormat(globalSaved.designFormat);
+      if (globalSaved.showRriLogo !== undefined) setShowRriLogo(globalSaved.showRriLogo);
+      if (globalSaved.showProgramLogo !== undefined) setShowProgramLogo(globalSaved.showProgramLogo);
+      if (globalSaved.showHutRiLogo !== undefined) setShowHutRiLogo(globalSaved.showHutRiLogo);
+      if (globalSaved.showEventName !== undefined) setShowEventName(globalSaved.showEventName);
+      if (globalSaved.rriLogoPosition) setRriLogoPosition(globalSaved.rriLogoPosition);
+      if (globalSaved.programLogoPosition) setProgramLogoPosition(globalSaved.programLogoPosition);
+      if (globalSaved.rriLogoTheme) setRriLogoTheme(globalSaved.rriLogoTheme);
+      if (globalSaved.programLogoTheme) setProgramLogoTheme(globalSaved.programLogoTheme);
+      if (globalSaved.hutRiLogoTheme) setHutRiLogoTheme(globalSaved.hutRiLogoTheme);
+      if (globalSaved.titleColor) setTitleColor(globalSaved.titleColor);
+      if (globalSaved.infoColor) setInfoColor(globalSaved.infoColor);
+      if (globalSaved.speakerColor) setSpeakerColor(globalSaved.speakerColor);
+      if (globalSaved.titleXOffset !== undefined) setTitleXOffset(globalSaved.titleXOffset);
+      if (globalSaved.titleYOffset !== undefined) setTitleYOffset(globalSaved.titleYOffset);
+      if (globalSaved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(globalSaved.speakerSpacingOffset);
+      if (globalSaved.speakerYOffset !== undefined) setSpeakerYOffset(globalSaved.speakerYOffset);
+      if (globalSaved.eventInfoYOffset !== undefined) setEventInfoYOffset(globalSaved.eventInfoYOffset);
+      if (globalSaved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(globalSaved.eventInfoXSpacing);
+    }
+  };
+
+  // When dialog changes, auto-select first presenter and set eventName and load settings
   useEffect(() => {
     if (!selectedDialogId) return;
     const dialog = dialogs.find((d) => d.id === selectedDialogId);
     if (dialog) {
       setEventName(dialog.name);
+      applyDialogSettings(dialog.id, dialog.name);
     }
     const dialogPresenters = allPresenters.filter((p) => p.dialog_id === selectedDialogId);
     if (dialogPresenters.length > 0) {
@@ -266,35 +338,37 @@ export default function GeneratorPage() {
         console.warn('Auth user fetch note:', authErr);
       }
 
-      // Load saved thumbnail settings defaults if available
-      const saved = (bRes.data as any)?.thumbnail_settings;
-      if (saved && typeof saved === 'object') {
-        if (saved.designFormat) setDesignFormat(saved.designFormat);
-        if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
-        if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
-        if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
-        if (saved.showHutRiLogo !== undefined) setShowHutRiLogo(saved.showHutRiLogo);
-        if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
-        if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
-        if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
-        if (saved.rriLogoTheme) setRriLogoTheme(saved.rriLogoTheme);
-        if (saved.programLogoTheme) setProgramLogoTheme(saved.programLogoTheme);
-        if (saved.hutRiLogoTheme) setHutRiLogoTheme(saved.hutRiLogoTheme);
-        if (saved.titleColor) setTitleColor(saved.titleColor);
-        if (saved.infoColor) setInfoColor(saved.infoColor);
-        if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
-        if (saved.titleXOffset !== undefined) setTitleXOffset(saved.titleXOffset);
-        if (saved.titleYOffset !== undefined) setTitleYOffset(saved.titleYOffset);
-        if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
-        if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
-        if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
-        if (saved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(saved.eventInfoXSpacing);
-      }
-
-      // Auto-select first dialog
+      // Auto-select first dialog and apply its saved/default settings
       if (fetchedDialogs.length > 0) {
-        setSelectedDialogId(fetchedDialogs[0].id);
-        setEventName(fetchedDialogs[0].name);
+        const firstDialog = fetchedDialogs[0];
+        setSelectedDialogId(firstDialog.id);
+        setEventName(firstDialog.name);
+        applyDialogSettings(firstDialog.id, firstDialog.name, bRes.data?.thumbnail_settings);
+      } else {
+        // Fallback to root thumbnail_settings if no dialogs
+        const saved = (bRes.data as any)?.thumbnail_settings;
+        if (saved && typeof saved === 'object') {
+          if (saved.designFormat) setDesignFormat(saved.designFormat);
+          if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
+          if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
+          if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
+          if (saved.showHutRiLogo !== undefined) setShowHutRiLogo(saved.showHutRiLogo);
+          if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
+          if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
+          if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
+          if (saved.rriLogoTheme) setRriLogoTheme(saved.rriLogoTheme);
+          if (saved.programLogoTheme) setProgramLogoTheme(saved.programLogoTheme);
+          if (saved.hutRiLogoTheme) setHutRiLogoTheme(saved.hutRiLogoTheme);
+          if (saved.titleColor) setTitleColor(saved.titleColor);
+          if (saved.infoColor) setInfoColor(saved.infoColor);
+          if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
+          if (saved.titleXOffset !== undefined) setTitleXOffset(saved.titleXOffset);
+          if (saved.titleYOffset !== undefined) setTitleYOffset(saved.titleYOffset);
+          if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
+          if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
+          if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
+          if (saved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(saved.eventInfoXSpacing);
+        }
       }
 
       // If no dialogs exist yet, fallback to first presenter
@@ -308,7 +382,7 @@ export default function GeneratorPage() {
     }
   };
 
-  const handleSaveThumbnailSettings = async () => {
+  const handleSaveThumbnailSettings = async (saveMode: 'dialog' | 'global' = 'dialog') => {
     if (!isAdmin) {
       alert('Hanya akun Admin yang memiliki akses untuk menyimpan settingan thumbnail.');
       return;
@@ -317,7 +391,7 @@ export default function GeneratorPage() {
     setIsSavingSettings(true);
     setSaveSuccessMsg(null);
     try {
-      const settingsPayload = {
+      const currentConfig = {
         designFormat,
         selectedProgram,
         showRriLogo,
@@ -342,14 +416,53 @@ export default function GeneratorPage() {
         updatedBy: currentUser?.email || 'Admin',
       };
 
+      const existingSettings = ((branding as any)?.thumbnail_settings && typeof (branding as any)?.thumbnail_settings === 'object') 
+        ? (branding as any).thumbnail_settings 
+        : {};
+
+      const existingDialogsMap = existingSettings.dialogs || {};
+      const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
+      const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
+
+      let newSettingsPayload: any;
+
+      if (saveMode === 'dialog' && selectedDialogId) {
+        newSettingsPayload = {
+          ...existingSettings,
+          ...currentConfig,
+          dialogs: {
+            ...existingDialogsMap,
+            [selectedDialogId]: currentConfig,
+            ...(currentDialog?.name ? { [currentDialog.name]: currentConfig } : {})
+          }
+        };
+
+        // Try updating dialogs table directly too if column exists
+        try {
+          await (supabase.from('dialogs') as any)
+            .update({ thumbnail_settings: currentConfig })
+            .eq('id', selectedDialogId);
+        } catch (dialogUpdateErr) {
+          // Non-blocking if column not yet migrated
+        }
+      } else {
+        // Global default
+        newSettingsPayload = {
+          ...existingSettings,
+          ...currentConfig,
+          global: currentConfig,
+          dialogs: existingDialogsMap,
+        };
+      }
+
       if (branding?.id) {
         const { error } = await (supabase.from('branding_settings') as any)
-          .update({ thumbnail_settings: settingsPayload })
+          .update({ thumbnail_settings: newSettingsPayload })
           .eq('id', branding.id);
         if (error) throw error;
       } else {
         const { data, error } = await (supabase.from('branding_settings') as any)
-          .insert([{ thumbnail_settings: settingsPayload }])
+          .insert([{ thumbnail_settings: newSettingsPayload }])
           .select()
           .single();
         if (error) throw error;
@@ -358,18 +471,24 @@ export default function GeneratorPage() {
 
       setBranding((prev: any) => ({
         ...(prev || {}),
-        thumbnail_settings: settingsPayload,
+        thumbnail_settings: newSettingsPayload,
       }));
-      setSaveSuccessMsg('Settingan default thumbnail berhasil disimpan!');
+
+      const msg = saveMode === 'dialog'
+        ? `Settingan default untuk acara "${activeDialogName}" berhasil disimpan!`
+        : 'Settingan default umum (semua acara) berhasil disimpan!';
+      setSaveSuccessMsg(msg);
       setTimeout(() => setSaveSuccessMsg(null), 4000);
     } catch (err: any) {
-      alert(`Gagal menyimpan settingan thumbnail: ${err.message}`);
+      alert(`Gagal menyimpan settingan: ${err.message || err}`);
     } finally {
       setIsSavingSettings(false);
     }
   };
 
   const selectedPresenter = allPresenters.find((p) => p.id === selectedPresenterId);
+  const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
+  const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
   
   // Resolve speakers for the preview
   const resolvedSpeakers = selectedSpeakerIds.slice(0, speakerCount).map((id) => {
@@ -690,19 +809,38 @@ export default function GeneratorPage() {
                 </div>
                 {dialogs.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {dialogs.map((d) => (
-                      <button
-                        key={d.id}
-                        onClick={() => setSelectedDialogId(d.id)}
-                        className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 ${
-                          selectedDialogId === d.id
-                            ? 'border-orange-500 bg-orange-50 text-orange-700 ring-4 ring-orange-500/10'
-                            : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
-                        }`}
-                      >
-                        {d.name}
-                      </button>
-                    ))}
+                    {dialogs.map((d) => {
+                      const isSelected = selectedDialogId === d.id;
+                      const hasCustomPreset = Boolean(
+                        (branding as any)?.thumbnail_settings?.dialogs?.[d.id] ||
+                        (branding as any)?.thumbnail_settings?.dialogs?.[d.name]
+                      );
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDialogId(d.id);
+                            setEventName(d.name);
+                            applyDialogSettings(d.id, d.name);
+                          }}
+                          className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 text-center flex flex-col items-center justify-center gap-1 ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50 text-orange-700 ring-4 ring-orange-500/10 shadow-xs'
+                              : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
+                          }`}
+                        >
+                          <span>{d.name}</span>
+                          {hasCustomPreset && (
+                            <span className={`text-[9px] font-semibold tracking-normal normal-case flex items-center gap-0.5 ${
+                              isSelected ? 'text-orange-600' : 'text-slate-400'
+                            }`}>
+                              <Sparkles size={9} /> Preset Tersimpan
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" placeholder="Nama acara..." />
@@ -1462,8 +1600,15 @@ export default function GeneratorPage() {
                   </span>
                 </div>
 
+                <div className="p-2.5 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1">
+                  <span className="text-[10px] text-slate-400 block">Acara Aktif:</span>
+                  <span className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
+                    <Mic2 size={12} /> {activeDialogName}
+                  </span>
+                </div>
+
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Simpan konfigurasi saat ini (posisi logo, nama acara, warna teks, format, dan jarak) sebagai template default thumbnail untuk seluruh tim.
+                  Simpan konfigurasi saat ini (pilihan Program {selectedProgram}, format, logo, warna, dan posisi) sebagai default yang otomatis muncul saat acara ini di-klik.
                 </p>
 
                 {saveSuccessMsg && (
@@ -1473,19 +1618,30 @@ export default function GeneratorPage() {
                   </div>
                 )}
 
-                <Button
-                  type="button"
-                  onClick={handleSaveThumbnailSettings}
-                  disabled={isSavingSettings}
-                  className="w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
-                >
-                  {isSavingSettings ? (
-                    <Loader2 size={15} className="animate-spin" />
-                  ) : (
-                    <Save size={15} />
-                  )}
-                  <span>Simpan Settingan Thumbnail</span>
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    onClick={() => handleSaveThumbnailSettings('dialog')}
+                    disabled={isSavingSettings}
+                    className="w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
+                  >
+                    {isSavingSettings ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Save size={15} />
+                    )}
+                    <span>Simpan Default untuk "{activeDialogName}"</span>
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveThumbnailSettings('global')}
+                    disabled={isSavingSettings}
+                    className="w-full text-center text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-1 underline underline-offset-2"
+                  >
+                    Atau simpan sebagai default semua acara (Global)
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1568,13 +1724,13 @@ export default function GeneratorPage() {
               {isAdmin && (
                 <button
                   type="button"
-                  onClick={handleSaveThumbnailSettings}
+                  onClick={() => handleSaveThumbnailSettings('dialog')}
                   disabled={isSavingSettings}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-orange-200 bg-white hover:bg-orange-50 text-orange-600 shadow-xs transition-all"
-                  title="Simpan settingan generator saat ini sebagai default template tim"
+                  title={`Simpan settingan generator saat ini sebagai default untuk acara ${activeDialogName}`}
                 >
                   <Save size={13} />
-                  <span>Simpan Default</span>
+                  <span>Simpan Default ({activeDialogName})</span>
                 </button>
               )}
 
