@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ThumbnailData } from './ThumbnailPreview';
+import { RRI_SOCIAL_MEDIA_IMAGE_BASE64 } from '@/lib/constants/socialMedia';
 
 function wrapText(text: string, maxChars: number): string[] {
   const words = text.split(' ');
@@ -394,65 +395,22 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           </text>
         )}
 
-        {/* 9. Footer Medsos Bar (Exact match to official RRI Banda Aceh branding) */}
-        <g transform="translate(45, 1245)">
-          <defs>
-            <linearGradient id={`${id}-ig-grad`} x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#feda75" />
-              <stop offset="25%" stopColor="#fa7e1e" />
-              <stop offset="50%" stopColor="#d62976" />
-              <stop offset="75%" stopColor="#962fbf" />
-              <stop offset="100%" stopColor="#4f5bd5" />
-            </linearGradient>
-          </defs>
-
-          {/* White Background Pill */}
-          <rect x={0} y={0} width={570} height={42} rx={21} fill="white"/>
-          
-          {/* Item 1: TikTok + Instagram + @rri_bandaaceh */}
-          {/* TikTok Icon */}
-          <g transform="translate(10, 9)">
-            <circle cx="12" cy="12" r="12" fill="#000000" />
-            <g transform="translate(4.8, 3.8) scale(0.66)">
-              <path fill="#25F4EE" transform="translate(-0.8, -0.6)" d="M16.6 5.82C15.92 5.42 15.34 4.85 14.9 4.17C14.42 3.43 14.16 2.55 14.16 1.65V1H10.85V14.13C10.85 15.36 9.85 16.36 8.62 16.36C7.4 16.36 6.4 15.36 6.4 14.13C6.4 12.91 7.4 11.91 8.62 11.91C8.95 11.91 9.27 11.98 9.55 12.11V8.74C9.25 8.7 8.94 8.68 8.62 8.68C5.62 8.68 3.18 11.13 3.18 14.13C3.18 17.13 5.62 19.58 8.62 19.58C11.62 19.58 14.07 17.13 14.07 14.13V8.05C15.21 8.85 16.59 9.32 18.09 9.32V6C17.55 6 17.04 5.94 16.6 5.82Z"/>
-              <path fill="#FE2C55" transform="translate(0.8, 0.6)" d="M16.6 5.82C15.92 5.42 15.34 4.85 14.9 4.17C14.42 3.43 14.16 2.55 14.16 1.65V1H10.85V14.13C10.85 15.36 9.85 16.36 8.62 16.36C7.4 16.36 6.4 15.36 6.4 14.13C6.4 12.91 7.4 11.91 8.62 11.91C8.95 11.91 9.27 11.98 9.55 12.11V8.74C9.25 8.7 8.94 8.68 8.62 8.68C5.62 8.68 3.18 11.13 3.18 14.13C3.18 17.13 5.62 19.58 8.62 19.58C11.62 19.58 14.07 17.13 14.07 14.13V8.05C15.21 8.85 16.59 9.32 18.09 9.32V6C17.55 6 17.04 5.94 16.6 5.82Z"/>
-              <path fill="#FFFFFF" d="M16.6 5.82C15.92 5.42 15.34 4.85 14.9 4.17C14.42 3.43 14.16 2.55 14.16 1.65V1H10.85V14.13C10.85 15.36 9.85 16.36 8.62 16.36C7.4 16.36 6.4 15.36 6.4 14.13C6.4 12.91 7.4 11.91 8.62 11.91C8.95 11.91 9.27 11.98 9.55 12.11V8.74C9.25 8.7 8.94 8.68 8.62 8.68C5.62 8.68 3.18 11.13 3.18 14.13C3.18 17.13 5.62 19.58 8.62 19.58C11.62 19.58 14.07 17.13 14.07 14.13V8.05C15.21 8.85 16.59 9.32 18.09 9.32V6C17.55 6 17.04 5.94 16.6 5.82Z"/>
-            </g>
-          </g>
-
-          {/* Instagram Icon */}
-          <g transform="translate(38, 9)">
-            <rect x="0" y="0" width="24" height="24" rx="7" fill={`url(#${id}-ig-grad)`} />
-            <rect x="4.5" y="4.5" width="15" height="15" rx="4" fill="none" stroke="white" strokeWidth="1.6" />
-            <circle cx="12" cy="12" r="3.6" fill="none" stroke="white" strokeWidth="1.6" />
-            <circle cx="15.8" cy="8.2" r="0.9" fill="white" />
-          </g>
-
-          {/* Username @rri_bandaaceh */}
-          <text x="69" y="26" fill="#000000" fontSize="13.5" fontWeight="600" fontFamily="Inter, sans-serif">
-            @rri_bandaaceh
-          </text>
-
-          {/* Item 2: Facebook + @RRIBandaAcehOfficial */}
-          <g transform="translate(198, 9)">
-            <path fill="#1877F2" d="M22 11C22 4.92 17.08 0 11 0C4.92 0 0 4.92 0 11C0 16.49 4.02 21.04 9.28 21.87V14.18H6.49V11H9.28V8.58C9.28 5.83 10.92 4.31 13.43 4.31C14.63 4.31 15.89 4.52 15.89 4.52V7.22H14.5C13.13 7.22 12.7 8.07 12.7 8.95V11H15.76L15.27 14.18H12.7V21.87C17.98 21.04 22 16.49 22 11Z" transform="scale(1.09)"/>
-          </g>
-          <text x="229" y="26" fill="#000000" fontSize="13.5" fontWeight="600" fontFamily="Inter, sans-serif">
-            @RRIBandaAcehOfficial
-          </text>
-
-          {/* Item 3: YouTube + @rribandaaceh */}
-          <g transform="translate(405, 9)">
-            <circle cx="12" cy="12" r="12" fill="#FF0000" />
-            <polygon points="9.5,7.2 16.5,12 9.5,16.8" fill="white" />
-          </g>
-          <text x="435" y="26" fill="#000000" fontSize="13.5" fontWeight="600" fontFamily="Inter, sans-serif">
-            @rribandaaceh
-          </text>
+        {/* 9. Footer Medsos Container (Official RRI Banda Aceh banner asset) */}
+        <g transform="translate(50, 1240)">
+          {/* White rounded pill background */}
+          <rect x={0} y={0} width={530} height={48} rx={24} fill="white"/>
+          <image
+            href={RRI_SOCIAL_MEDIA_IMAGE_BASE64}
+            x={15}
+            y={5}
+            width={500}
+            height={38}
+            preserveAspectRatio="xMidYMid meet"
+          />
         </g>
 
         {/* 10. Info Promosi Bubble */}
-        <g transform="translate(640, 1242)">
+        <g transform="translate(610, 1240)">
           <circle cx="24" cy="24" r="24" fill="#22c55e" />
           <path transform="translate(12, 12) scale(1)" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           <text
