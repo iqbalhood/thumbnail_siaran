@@ -12,3 +12,4 @@ ALTER TABLE branding_settings
   ADD COLUMN IF NOT EXISTS pro4_logo_dark_path TEXT,
   ADD COLUMN IF NOT EXISTS hut_ri_logo_dark_url TEXT,
   ADD COLUMN IF NOT EXISTS hut_ri_logo_dark_path TEXT;
+
