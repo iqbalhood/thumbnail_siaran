@@ -80,15 +80,88 @@ export default function SettingsPage() {
     await updateBranding({ phone_number: phoneNumber });
   };
 
-  const handleResetThumbnailDefaults = async () => {
-    if (!confirm('Apakah Anda yakin ingin menghapus settingan default thumbnail dan mengembalikan ke setelan awal sistem?')) return;
+  const inferDefaultProgram = (dialogName: string): 'PRO 1' | 'PRO 2' | 'PRO 4' => {
+    const dUpper = (dialogName || '').toUpperCase();
+    if (dUpper.includes('PRO 2') || dUpper.includes('PRO2') || dUpper.includes('OSSI') || dUpper.includes('CEK CERITA')) {
+      return 'PRO 2';
+    }
+    if (dUpper.includes('PRO 4') || dUpper.includes('PRO4')) {
+      return 'PRO 4';
+    }
+    return 'PRO 1';
+  };
+
+  const getDialogSavedPreset = (dialog: any) => {
+    if (
+      dialog?.thumbnail_settings &&
+      typeof dialog.thumbnail_settings === 'object' &&
+      Object.keys(dialog.thumbnail_settings).length > 0
+    ) {
+      return dialog.thumbnail_settings;
+    }
+    const dialogsMap = branding?.thumbnail_settings?.dialogs;
+    if (dialogsMap && typeof dialogsMap === 'object') {
+      return dialogsMap[dialog.id] || dialogsMap[dialog.name] || null;
+    }
+    return null;
+  };
+
+  const handleResetSingleDialogDefault = async (dialog: any) => {
+    if (!confirm(`Reset settingan default untuk acara "${dialog.name}" ke setelan bawaan sistem?`)) return;
     try {
+      const existingDialogsMap = { ...(branding?.thumbnail_settings?.dialogs || {}) };
+      delete existingDialogsMap[dialog.id];
+      if (dialog.name) {
+        delete existingDialogsMap[dialog.name];
+      }
+
+      const newSettingsPayload = {
+        dialogs: existingDialogsMap,
+      };
+
+      try {
+        await (supabase.from('dialogs') as any)
+          .update({ thumbnail_settings: null })
+          .eq('id', dialog.id);
+      } catch (e) {
+        // Non-blocking if column not migrated yet
+      }
+
       const { error } = await (supabase.from('branding_settings') as any)
-        .update({ thumbnail_settings: null })
+        .update({ thumbnail_settings: newSettingsPayload })
         .eq('id', branding.id);
       if (error) throw error;
-      setBranding({ ...branding, thumbnail_settings: null });
-      alert('Settingan default thumbnail berhasil di-reset ke setelan awal sistem.');
+
+      setBranding({ ...branding, thumbnail_settings: newSettingsPayload });
+      setDialogs((prev) =>
+        prev.map((d) => (d.id === dialog.id ? { ...d, thumbnail_settings: null } : d))
+      );
+    } catch (err: any) {
+      alert(`Gagal mereset settingan "${dialog.name}": ${err.message}`);
+    }
+  };
+
+  const handleResetThumbnailDefaults = async () => {
+    if (!confirm('Apakah Anda yakin ingin menghapus semua settingan default acara dan mengembalikan semuanya ke setelan awal sistem?')) return;
+    try {
+      const { error } = await (supabase.from('branding_settings') as any)
+        .update({ thumbnail_settings: { dialogs: {} } })
+        .eq('id', branding.id);
+      if (error) throw error;
+
+      try {
+        for (const d of dialogs) {
+          await (supabase.from('dialogs') as any)
+            .update({ thumbnail_settings: null })
+            .eq('id', d.id);
+        }
+      } catch (e) {
+        // Non-blocking
+      }
+
+      setBranding({ ...branding, thumbnail_settings: { dialogs: {} } });
+      setDialogs((prev) => prev.map((d) => ({ ...d, thumbnail_settings: null })));
+      alert('Semua settingan default acara berhasil di-reset ke setelan awal sistem.');
     } catch (err: any) {
       alert(`Gagal mereset: ${err.message}`);
     }
@@ -630,27 +703,27 @@ export default function SettingsPage() {
         )}
       </section>
 
-      {/* D. Template Thumbnail Default */}
-      <section className="bg-white rounded-2xl border border-slate-100 p-8 space-y-5 shadow-sm">
+      {/* D. Template Thumbnail Default Per Acara / Poster */}
+      <section className="bg-white rounded-2xl border border-slate-100 p-8 space-y-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Sparkles size={18} className="text-orange-500" />
-              Settingan Template Default Thumbnail & Poster
+              Settingan Template Default Per Acara / Poster
             </h2>
             <p className="text-xs text-slate-500">
-              Pengaturan default generator yang otomatis dimuat saat pengguna membuka halaman generator.
+              Setiap acara/dialog memiliki settingan default masing-masing yang otomatis dimuat saat tombol acara di-klik di Generator.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {branding?.thumbnail_settings && (
+          <div className="flex items-center gap-2 shrink-0">
+            {dialogs.some((d) => Boolean(getDialogSavedPreset(d))) && (
               <Button
                 variant="outline"
                 onClick={handleResetThumbnailDefaults}
                 className="text-xs text-slate-600 hover:text-red-600 border-slate-200"
               >
                 <RotateCcw size={14} className="mr-1.5" />
-                Reset ke Default Sistem
+                Reset Semua Acara
               </Button>
             )}
             <a
@@ -658,48 +731,150 @@ export default function SettingsPage() {
               className="bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
             >
               <LayoutGrid size={14} />
-              Atur di Generator
+              Buka Generator
             </a>
           </div>
         </div>
 
-        {branding?.thumbnail_settings ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Format Default</span>
-              <span className="text-xs font-bold text-slate-800 capitalize">
-                {branding.thumbnail_settings.designFormat === 'poster' ? 'Poster (4:5)' : 'YouTube (16:9)'}
-              </span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Programa Default</span>
-              <span className="text-xs font-bold text-slate-800">
-                {branding.thumbnail_settings.selectedProgram || 'PRO 1'}
-              </span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Warna Judul</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span
-                  className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
-                  style={{ backgroundColor: branding.thumbnail_settings.titleColor || '#FFFFFF' }}
-                />
-                <span className="text-xs font-bold text-slate-800 font-mono">
-                  {branding.thumbnail_settings.titleColor || '#FFFFFF'}
-                </span>
-              </div>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Terakhir Disimpan</span>
-              <span className="text-xs font-medium text-slate-700 truncate block">
-                {branding.thumbnail_settings.updatedBy || 'Admin'}
-              </span>
-            </div>
+        {dialogs.length > 0 ? (
+          <div className="space-y-4">
+            {dialogs.map((d) => {
+              const saved = getDialogSavedPreset(d);
+              const isCustomized = Boolean(saved);
+              const program = saved?.selectedProgram || inferDefaultProgram(d.name);
+              const formatLabel = saved?.designFormat === 'poster' ? 'Poster (4:5)' : 'YouTube (16:9)';
+              const titleColorVal = saved?.titleColor || '#FFFFFF';
+              const infoColorVal = saved?.infoColor || '#FFFFFF';
+              const speakerColorVal = saved?.speakerColor || '#FFFFFF';
+              const rriTheme = saved?.rriLogoTheme || 'white';
+              const progTheme = saved?.programLogoTheme || 'white';
+              const showEvent = saved?.showEventName !== undefined ? saved.showEventName : true;
+              const xOffset = saved?.titleXOffset || 0;
+              const yOffset = saved?.titleYOffset || 0;
+
+              return (
+                <div
+                  key={d.id}
+                  className={`rounded-2xl border p-5 space-y-4 transition-all ${
+                    isCustomized
+                      ? 'bg-orange-50/20 border-orange-200/80 shadow-xs'
+                      : 'bg-slate-50/60 border-slate-200/70'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        isCustomized ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        <Mic2 size={15} />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                        {d.name}
+                      </h3>
+                      {isCustomized ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          ✓ Default Custom Tersimpan
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200/80 text-slate-600">
+                          Default Sistem ({program})
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isCustomized && (
+                        <button
+                          type="button"
+                          onClick={() => handleResetSingleDialogDefault(d)}
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 text-slate-600 hover:text-red-600 text-xs font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <RotateCcw size={12} />
+                          Reset
+                        </button>
+                      )}
+                      <a
+                        href={`/generator?dialog=${encodeURIComponent(d.id)}`}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-orange-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                      >
+                        <LayoutGrid size={12} />
+                        Atur {d.name}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-white rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Format & Nama Acara</span>
+                      <span className="text-xs font-bold text-slate-800 block mt-0.5">
+                        {formatLabel}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">
+                        Teks Acara: <strong>{showEvent ? 'Tampil' : 'Sembunyi'}</strong>
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Programa & Tema Logo</span>
+                      <span className="text-xs font-bold text-slate-800 block mt-0.5">
+                        {program}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5 capitalize">
+                        RRI: <strong>{rriTheme}</strong> · Pro: <strong>{progTheme}</strong>
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Warna & Posisi Judul</span>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
+                          style={{ backgroundColor: titleColorVal }}
+                          title={`Judul: ${titleColorVal}`}
+                        />
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
+                          style={{ backgroundColor: infoColorVal }}
+                          title={`Info: ${infoColorVal}`}
+                        />
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0"
+                          style={{ backgroundColor: speakerColorVal }}
+                          title={`Narasumber: ${speakerColorVal}`}
+                        />
+                        <span className="text-[11px] font-bold text-slate-800 font-mono ml-0.5">
+                          {titleColorVal}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">
+                        Offset X: <strong>{xOffset}px</strong> · Y: <strong>{yOffset}px</strong>
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-slate-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Terakhir Disimpan</span>
+                      <span className="text-xs font-medium text-slate-700 truncate block mt-0.5">
+                        {saved?.updatedBy || 'Belum diatur (Default)'}
+                      </span>
+                      {saved?.updatedAt && (
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          {new Date(saved.updatedAt).toLocaleDateString('id-ID', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 flex items-center gap-2">
             <Info size={16} className="text-orange-500 shrink-0" />
-            <span>Belum ada custom settingan template yang disimpan. Generator saat ini menggunakan setelan bawaan sistem.</span>
+            <span>Belum ada dialog/acara yang terdaftar. Tambahkan dialog terlebih dahulu di atas.</span>
           </div>
         )}
       </section>

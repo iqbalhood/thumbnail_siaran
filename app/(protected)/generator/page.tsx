@@ -223,92 +223,120 @@ export default function GeneratorPage() {
     fetchInitialData();
   }, []);
 
-  // Apply saved or inferred settings for a specific Dialog / Acara
-  const applyDialogSettings = (
-    dialogId: string, 
-    dialogName: string, 
-    customSettingsSource?: any
-  ) => {
-    const rootSettings = customSettingsSource || (branding as any)?.thumbnail_settings;
-    
-    // 1. Check if dialog has specific saved preset settings (by ID or by Name)
-    const dialogsMap = (rootSettings && typeof rootSettings === 'object') ? (rootSettings.dialogs || {}) : {};
-    const saved = dialogsMap[dialogId] || dialogsMap[dialogName];
-
-    if (saved && typeof saved === 'object') {
-      if (saved.designFormat) setDesignFormat(saved.designFormat);
-      if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
-      if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
-      if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
-      if (saved.showHutRiLogo !== undefined) setShowHutRiLogo(saved.showHutRiLogo);
-      if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
-      if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
-      if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
-      if (saved.rriLogoTheme) setRriLogoTheme(saved.rriLogoTheme);
-      if (saved.programLogoTheme) setProgramLogoTheme(saved.programLogoTheme);
-      if (saved.hutRiLogoTheme) setHutRiLogoTheme(saved.hutRiLogoTheme);
-      if (saved.titleColor) setTitleColor(saved.titleColor);
-      if (saved.infoColor) setInfoColor(saved.infoColor);
-      if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
-      if (saved.titleXOffset !== undefined) setTitleXOffset(saved.titleXOffset);
-      if (saved.titleYOffset !== undefined) setTitleYOffset(saved.titleYOffset);
-      if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
-      if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
-      if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
-      if (saved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(saved.eventInfoXSpacing);
-      return;
-    }
-
-    // 2. If no custom settings for this dialog, infer program from dialog name
+  // Infer default Programa from dialog name when no custom preset exists yet
+  const inferProgramFromDialogName = (dialogName: string): 'PRO 1' | 'PRO 2' | 'PRO 4' => {
     const dUpper = (dialogName || '').toUpperCase();
-    if (dUpper.includes('PRO 2') || dUpper.includes('PRO2') || dUpper.includes('OSSI')) {
-      setSelectedProgram('PRO 2');
-    } else if (dUpper.includes('PRO 4') || dUpper.includes('PRO4')) {
-      setSelectedProgram('PRO 4');
-    } else if (dUpper.includes('PRO 1') || dUpper.includes('PRO1') || dUpper.includes('MENYAPA')) {
-      setSelectedProgram('PRO 1');
+    if (dUpper.includes('PRO 2') || dUpper.includes('PRO2') || dUpper.includes('OSSI') || dUpper.includes('CEK CERITA')) {
+      return 'PRO 2';
+    }
+    if (dUpper.includes('PRO 4') || dUpper.includes('PRO4')) {
+      return 'PRO 4';
+    }
+    return 'PRO 1';
+  };
+
+  // System defaults for a given dialog (used when dialog has no saved custom preset)
+  const getDefaultDialogConfig = (dialogName: string) => {
+    const isAug = new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS');
+    return {
+      designFormat: 'youtube' as 'youtube' | 'poster',
+      selectedProgram: inferProgramFromDialogName(dialogName),
+      showRriLogo: true,
+      showProgramLogo: true,
+      showHutRiLogo: isAug,
+      showEventName: true,
+      rriLogoPosition: 'left' as 'left' | 'right',
+      programLogoPosition: 'right' as 'left' | 'right',
+      rriLogoTheme: 'white' as 'white' | 'dark',
+      programLogoTheme: 'white' as 'white' | 'dark',
+      hutRiLogoTheme: 'white' as 'white' | 'dark',
+      titleColor: '#FFFFFF',
+      infoColor: '#FFFFFF',
+      speakerColor: '#FFFFFF',
+      titleXOffset: 0,
+      titleYOffset: 0,
+      speakerSpacingOffset: 0,
+      speakerYOffset: 0,
+      eventInfoYOffset: 0,
+      eventInfoXSpacing: 0,
+    };
+  };
+
+  // Resolve saved preset ONLY for the specified dialog (never falls back to global/other dialog)
+  const resolveSavedDialogPreset = (
+    dialogId: string,
+    dialogName: string,
+    customSettingsSource?: any,
+    customDialogsList?: any[]
+  ) => {
+    const list = customDialogsList || dialogs;
+    const dialogObj = list.find((d) => d.id === dialogId || d.name === dialogName);
+    if (
+      dialogObj?.thumbnail_settings &&
+      typeof dialogObj.thumbnail_settings === 'object' &&
+      Object.keys(dialogObj.thumbnail_settings).length > 0
+    ) {
+      return dialogObj.thumbnail_settings;
     }
 
-    // 3. Fallback to global defaults for colors & alignment if available
-    const globalSaved = rootSettings?.global || (rootSettings?.titleColor ? rootSettings : null);
-    if (globalSaved && typeof globalSaved === 'object') {
-      if (globalSaved.designFormat) setDesignFormat(globalSaved.designFormat);
-      if (globalSaved.showRriLogo !== undefined) setShowRriLogo(globalSaved.showRriLogo);
-      if (globalSaved.showProgramLogo !== undefined) setShowProgramLogo(globalSaved.showProgramLogo);
-      if (globalSaved.showHutRiLogo !== undefined) setShowHutRiLogo(globalSaved.showHutRiLogo);
-      if (globalSaved.showEventName !== undefined) setShowEventName(globalSaved.showEventName);
-      if (globalSaved.rriLogoPosition) setRriLogoPosition(globalSaved.rriLogoPosition);
-      if (globalSaved.programLogoPosition) setProgramLogoPosition(globalSaved.programLogoPosition);
-      if (globalSaved.rriLogoTheme) setRriLogoTheme(globalSaved.rriLogoTheme);
-      if (globalSaved.programLogoTheme) setProgramLogoTheme(globalSaved.programLogoTheme);
-      if (globalSaved.hutRiLogoTheme) setHutRiLogoTheme(globalSaved.hutRiLogoTheme);
-      if (globalSaved.titleColor) setTitleColor(globalSaved.titleColor);
-      if (globalSaved.infoColor) setInfoColor(globalSaved.infoColor);
-      if (globalSaved.speakerColor) setSpeakerColor(globalSaved.speakerColor);
-      if (globalSaved.titleXOffset !== undefined) setTitleXOffset(globalSaved.titleXOffset);
-      if (globalSaved.titleYOffset !== undefined) setTitleYOffset(globalSaved.titleYOffset);
-      if (globalSaved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(globalSaved.speakerSpacingOffset);
-      if (globalSaved.speakerYOffset !== undefined) setSpeakerYOffset(globalSaved.speakerYOffset);
-      if (globalSaved.eventInfoYOffset !== undefined) setEventInfoYOffset(globalSaved.eventInfoYOffset);
-      if (globalSaved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(globalSaved.eventInfoXSpacing);
+    const rootSettings = customSettingsSource !== undefined ? customSettingsSource : (branding as any)?.thumbnail_settings;
+    const dialogsMap =
+      rootSettings && typeof rootSettings === 'object' && rootSettings.dialogs && typeof rootSettings.dialogs === 'object'
+        ? rootSettings.dialogs
+        : {};
+
+    return dialogsMap[dialogId] || dialogsMap[dialogName] || null;
+  };
+
+  // Apply saved preset or clean system defaults for a specific Dialog / Acara
+  const applyDialogSettings = (
+    dialogId: string,
+    dialogName: string,
+    customSettingsSource?: any,
+    customDialogsList?: any[]
+  ) => {
+    const defaults = getDefaultDialogConfig(dialogName);
+    const saved = resolveSavedDialogPreset(dialogId, dialogName, customSettingsSource, customDialogsList);
+    const merged = { ...defaults, ...(saved && typeof saved === 'object' ? saved : {}) };
+
+    setDesignFormat(merged.designFormat === 'poster' ? 'poster' : 'youtube');
+    setSelectedProgram(merged.selectedProgram || defaults.selectedProgram);
+    setShowRriLogo(merged.showRriLogo !== undefined ? merged.showRriLogo : true);
+    setShowProgramLogo(merged.showProgramLogo !== undefined ? merged.showProgramLogo : true);
+    setShowHutRiLogo(merged.showHutRiLogo !== undefined ? merged.showHutRiLogo : defaults.showHutRiLogo);
+    setShowEventName(merged.showEventName !== undefined ? merged.showEventName : true);
+    setRriLogoPosition(merged.rriLogoPosition || 'left');
+    setProgramLogoPosition(merged.programLogoPosition || 'right');
+    setRriLogoTheme(merged.rriLogoTheme || 'white');
+    setProgramLogoTheme(merged.programLogoTheme || 'white');
+    setHutRiLogoTheme(merged.hutRiLogoTheme || 'white');
+    setTitleColor(merged.titleColor || '#FFFFFF');
+    setInfoColor(merged.infoColor || '#FFFFFF');
+    setSpeakerColor(merged.speakerColor || '#FFFFFF');
+    setTitleXOffset(merged.titleXOffset !== undefined ? merged.titleXOffset : 0);
+    setTitleYOffset(merged.titleYOffset !== undefined ? merged.titleYOffset : 0);
+    setSpeakerSpacingOffset(merged.speakerSpacingOffset !== undefined ? merged.speakerSpacingOffset : 0);
+    setSpeakerYOffset(merged.speakerYOffset !== undefined ? merged.speakerYOffset : 0);
+    setEventInfoYOffset(merged.eventInfoYOffset !== undefined ? merged.eventInfoYOffset : 0);
+    setEventInfoXSpacing(merged.eventInfoXSpacing !== undefined ? merged.eventInfoXSpacing : 0);
+
+    if (saved?.startTime && saved?.endTime) {
+      setStartTime(saved.startTime);
+      setEndTime(saved.endTime);
+      setTime(`${saved.startTime} – ${saved.endTime} WIB`);
     }
   };
 
-  // When dialog changes, auto-select first presenter and set eventName and load settings
+  // When dialog changes, auto-select first presenter for that dialog
   useEffect(() => {
     if (!selectedDialogId) return;
-    const dialog = dialogs.find((d) => d.id === selectedDialogId);
-    if (dialog) {
-      setEventName(dialog.name);
-      applyDialogSettings(dialog.id, dialog.name);
-    }
     const dialogPresenters = allPresenters.filter((p) => p.dialog_id === selectedDialogId);
     if (dialogPresenters.length > 0) {
       setSelectedPresenterId(dialogPresenters[0].id);
     } else {
       setSelectedPresenterId('');
     }
-  }, [selectedDialogId, allPresenters, dialogs]);
+  }, [selectedDialogId, allPresenters]);
 
   const fetchInitialData = async () => {
     setIsLoading(true);
@@ -338,37 +366,22 @@ export default function GeneratorPage() {
         console.warn('Auth user fetch note:', authErr);
       }
 
-      // Auto-select first dialog and apply its saved/default settings
+      // Check if URL has ?dialog=<id> query param (from Settings page)
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const requestedDialogId = urlParams?.get('dialog');
+
       if (fetchedDialogs.length > 0) {
-        const firstDialog = fetchedDialogs[0];
-        setSelectedDialogId(firstDialog.id);
-        setEventName(firstDialog.name);
-        applyDialogSettings(firstDialog.id, firstDialog.name, (bRes.data as any)?.thumbnail_settings);
-      } else {
-        // Fallback to root thumbnail_settings if no dialogs
-        const saved = (bRes.data as any)?.thumbnail_settings;
-        if (saved && typeof saved === 'object') {
-          if (saved.designFormat) setDesignFormat(saved.designFormat);
-          if (saved.selectedProgram) setSelectedProgram(saved.selectedProgram);
-          if (saved.showRriLogo !== undefined) setShowRriLogo(saved.showRriLogo);
-          if (saved.showProgramLogo !== undefined) setShowProgramLogo(saved.showProgramLogo);
-          if (saved.showHutRiLogo !== undefined) setShowHutRiLogo(saved.showHutRiLogo);
-          if (saved.showEventName !== undefined) setShowEventName(saved.showEventName);
-          if (saved.rriLogoPosition) setRriLogoPosition(saved.rriLogoPosition);
-          if (saved.programLogoPosition) setProgramLogoPosition(saved.programLogoPosition);
-          if (saved.rriLogoTheme) setRriLogoTheme(saved.rriLogoTheme);
-          if (saved.programLogoTheme) setProgramLogoTheme(saved.programLogoTheme);
-          if (saved.hutRiLogoTheme) setHutRiLogoTheme(saved.hutRiLogoTheme);
-          if (saved.titleColor) setTitleColor(saved.titleColor);
-          if (saved.infoColor) setInfoColor(saved.infoColor);
-          if (saved.speakerColor) setSpeakerColor(saved.speakerColor);
-          if (saved.titleXOffset !== undefined) setTitleXOffset(saved.titleXOffset);
-          if (saved.titleYOffset !== undefined) setTitleYOffset(saved.titleYOffset);
-          if (saved.speakerSpacingOffset !== undefined) setSpeakerSpacingOffset(saved.speakerSpacingOffset);
-          if (saved.speakerYOffset !== undefined) setSpeakerYOffset(saved.speakerYOffset);
-          if (saved.eventInfoYOffset !== undefined) setEventInfoYOffset(saved.eventInfoYOffset);
-          if (saved.eventInfoXSpacing !== undefined) setEventInfoXSpacing(saved.eventInfoXSpacing);
-        }
+        const targetDialog =
+          (requestedDialogId && fetchedDialogs.find((d) => d.id === requestedDialogId || d.name === requestedDialogId)) ||
+          fetchedDialogs[0];
+        setSelectedDialogId(targetDialog.id);
+        setEventName(targetDialog.name);
+        applyDialogSettings(
+          targetDialog.id,
+          targetDialog.name,
+          (bRes.data as any)?.thumbnail_settings,
+          fetchedDialogs
+        );
       }
 
       // If no dialogs exist yet, fallback to first presenter
@@ -382,16 +395,26 @@ export default function GeneratorPage() {
     }
   };
 
-  const handleSaveThumbnailSettings = async (saveMode: 'dialog' | 'global' = 'dialog') => {
+  const handleSaveThumbnailSettings = async () => {
     if (!isAdmin) {
       alert('Hanya akun Admin yang memiliki akses untuk menyimpan settingan thumbnail.');
+      return;
+    }
+
+    if (!selectedDialogId) {
+      alert('Pilih acara / dialog terlebih dahulu.');
       return;
     }
 
     setIsSavingSettings(true);
     setSaveSuccessMsg(null);
     try {
+      const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
+      const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
+
       const currentConfig = {
+        dialogId: selectedDialogId,
+        dialogName: activeDialogName,
         designFormat,
         selectedProgram,
         showRriLogo,
@@ -412,47 +435,40 @@ export default function GeneratorPage() {
         speakerYOffset,
         eventInfoYOffset,
         eventInfoXSpacing,
+        startTime,
+        endTime,
         updatedAt: new Date().toISOString(),
         updatedBy: currentUser?.email || 'Admin',
       };
 
-      const existingSettings = ((branding as any)?.thumbnail_settings && typeof (branding as any)?.thumbnail_settings === 'object') 
-        ? (branding as any).thumbnail_settings 
-        : {};
+      const existingSettings =
+        (branding as any)?.thumbnail_settings && typeof (branding as any)?.thumbnail_settings === 'object'
+          ? (branding as any).thumbnail_settings
+          : {};
 
-      const existingDialogsMap = existingSettings.dialogs || {};
-      const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
-      const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
+      const existingDialogsMap =
+        existingSettings.dialogs && typeof existingSettings.dialogs === 'object'
+          ? existingSettings.dialogs
+          : {};
 
-      let newSettingsPayload: any;
+      const newDialogsMap = {
+        ...existingDialogsMap,
+        [selectedDialogId]: currentConfig,
+        ...(currentDialog?.name ? { [currentDialog.name]: currentConfig } : {}),
+      };
 
-      if (saveMode === 'dialog' && selectedDialogId) {
-        newSettingsPayload = {
-          ...existingSettings,
-          ...currentConfig,
-          dialogs: {
-            ...existingDialogsMap,
-            [selectedDialogId]: currentConfig,
-            ...(currentDialog?.name ? { [currentDialog.name]: currentConfig } : {})
-          }
-        };
+      // Store strictly inside dialogs map so each poster/acara has its own isolated preset
+      const newSettingsPayload = {
+        dialogs: newDialogsMap,
+      };
 
-        // Try updating dialogs table directly too if column exists
-        try {
-          await (supabase.from('dialogs') as any)
-            .update({ thumbnail_settings: currentConfig })
-            .eq('id', selectedDialogId);
-        } catch (dialogUpdateErr) {
-          // Non-blocking if column not yet migrated
-        }
-      } else {
-        // Global default
-        newSettingsPayload = {
-          ...existingSettings,
-          ...currentConfig,
-          global: currentConfig,
-          dialogs: existingDialogsMap,
-        };
+      // Try updating dialogs table directly too if column exists
+      try {
+        await (supabase.from('dialogs') as any)
+          .update({ thumbnail_settings: currentConfig })
+          .eq('id', selectedDialogId);
+      } catch (dialogUpdateErr) {
+        // Non-blocking if column not yet migrated
       }
 
       if (branding?.id) {
@@ -474,13 +490,72 @@ export default function GeneratorPage() {
         thumbnail_settings: newSettingsPayload,
       }));
 
-      const msg = saveMode === 'dialog'
-        ? `Settingan default untuk acara "${activeDialogName}" berhasil disimpan!`
-        : 'Settingan default umum (semua acara) berhasil disimpan!';
-      setSaveSuccessMsg(msg);
+      setDialogs((prev) =>
+        prev.map((d) => (d.id === selectedDialogId ? { ...d, thumbnail_settings: currentConfig } : d))
+      );
+
+      setSaveSuccessMsg(`Settingan default khusus untuk "${activeDialogName}" berhasil disimpan!`);
       setTimeout(() => setSaveSuccessMsg(null), 4000);
     } catch (err: any) {
       alert(`Gagal menyimpan settingan: ${err.message || err}`);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleResetCurrentDialogSettings = async () => {
+    if (!isAdmin || !selectedDialogId) return;
+    const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
+    const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
+    if (!confirm(`Reset settingan default untuk "${activeDialogName}" ke setelan bawaan sistem?`)) return;
+
+    setIsSavingSettings(true);
+    try {
+      const existingSettings =
+        (branding as any)?.thumbnail_settings && typeof (branding as any)?.thumbnail_settings === 'object'
+          ? (branding as any).thumbnail_settings
+          : {};
+
+      const existingDialogsMap = { ...(existingSettings.dialogs || {}) };
+      delete existingDialogsMap[selectedDialogId];
+      if (currentDialog?.name) {
+        delete existingDialogsMap[currentDialog.name];
+      }
+
+      const newSettingsPayload = {
+        dialogs: existingDialogsMap,
+      };
+
+      try {
+        await (supabase.from('dialogs') as any)
+          .update({ thumbnail_settings: null })
+          .eq('id', selectedDialogId);
+      } catch (e) {
+        // Non-blocking
+      }
+
+      if (branding?.id) {
+        const { error } = await (supabase.from('branding_settings') as any)
+          .update({ thumbnail_settings: newSettingsPayload })
+          .eq('id', branding.id);
+        if (error) throw error;
+      }
+
+      setBranding((prev: any) => ({
+        ...(prev || {}),
+        thumbnail_settings: newSettingsPayload,
+      }));
+
+      const updatedDialogs = dialogs.map((d) =>
+        d.id === selectedDialogId ? { ...d, thumbnail_settings: null } : d
+      );
+      setDialogs(updatedDialogs);
+
+      applyDialogSettings(selectedDialogId, activeDialogName, newSettingsPayload, updatedDialogs);
+      setSaveSuccessMsg(`Settingan "${activeDialogName}" berhasil di-reset ke default sistem.`);
+      setTimeout(() => setSaveSuccessMsg(null), 4000);
+    } catch (err: any) {
+      alert(`Gagal mereset settingan: ${err.message || err}`);
     } finally {
       setIsSavingSettings(false);
     }
@@ -811,10 +886,8 @@ export default function GeneratorPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {dialogs.map((d) => {
                       const isSelected = selectedDialogId === d.id;
-                      const hasCustomPreset = Boolean(
-                        (branding as any)?.thumbnail_settings?.dialogs?.[d.id] ||
-                        (branding as any)?.thumbnail_settings?.dialogs?.[d.name]
-                      );
+                      const savedPreset = resolveSavedDialogPreset(d.id, d.name);
+                      const hasCustomPreset = Boolean(savedPreset);
                       return (
                         <button
                           key={d.id}
@@ -833,9 +906,9 @@ export default function GeneratorPage() {
                           <span>{d.name}</span>
                           {hasCustomPreset && (
                             <span className={`text-[9px] font-semibold tracking-normal normal-case flex items-center gap-0.5 ${
-                              isSelected ? 'text-orange-600' : 'text-slate-400'
+                              isSelected ? 'text-orange-600' : 'text-emerald-600'
                             }`}>
-                              <Sparkles size={9} /> Preset Tersimpan
+                              <Sparkles size={9} /> {savedPreset?.selectedProgram || 'Custom'} · Preset Aktif
                             </span>
                           )}
                         </button>
@@ -1592,7 +1665,7 @@ export default function GeneratorPage() {
                   <div className="flex items-center gap-2">
                     <Sparkles size={16} className="text-orange-400" />
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                      Settingan Template Default
+                      Settingan Default Per Poster / Acara
                     </span>
                   </div>
                   <span className="text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
@@ -1600,15 +1673,26 @@ export default function GeneratorPage() {
                   </span>
                 </div>
 
-                <div className="p-2.5 bg-slate-800/80 rounded-xl border border-slate-700 space-y-1">
-                  <span className="text-[10px] text-slate-400 block">Acara Aktif:</span>
-                  <span className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
-                    <Mic2 size={12} /> {activeDialogName}
-                  </span>
+                <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Acara / Poster yang Diatur:</span>
+                    <span className="text-xs font-bold text-orange-400 flex items-center gap-1.5 mt-0.5">
+                      <Mic2 size={12} /> {activeDialogName}
+                    </span>
+                  </div>
+                  {Boolean(selectedDialogId && resolveSavedDialogPreset(selectedDialogId, activeDialogName)) ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Preset Tersimpan
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
+                      Default Sistem
+                    </span>
+                  )}
                 </div>
 
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Simpan konfigurasi saat ini (pilihan Program {selectedProgram}, format, logo, warna, dan posisi) sebagai default yang otomatis muncul saat acara ini di-klik.
+                  Settingan ini disimpan <strong>khusus untuk acara {activeDialogName} saja</strong> (tidak mengubah acara lain). Saat tombol <strong>{activeDialogName}</strong> di-klik, konfigurasi ini langsung otomatis dimuat.
                 </p>
 
                 {saveSuccessMsg && (
@@ -1621,7 +1705,7 @@ export default function GeneratorPage() {
                 <div className="space-y-2">
                   <Button
                     type="button"
-                    onClick={() => handleSaveThumbnailSettings('dialog')}
+                    onClick={handleSaveThumbnailSettings}
                     disabled={isSavingSettings}
                     className="w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
                   >
@@ -1630,17 +1714,20 @@ export default function GeneratorPage() {
                     ) : (
                       <Save size={15} />
                     )}
-                    <span>Simpan Default untuk "{activeDialogName}"</span>
+                    <span>Simpan Default Khusus &ldquo;{activeDialogName}&rdquo;</span>
                   </Button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSaveThumbnailSettings('global')}
-                    disabled={isSavingSettings}
-                    className="w-full text-center text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-1 underline underline-offset-2"
-                  >
-                    Atau simpan sebagai default semua acara (Global)
-                  </button>
+                  {Boolean(selectedDialogId && resolveSavedDialogPreset(selectedDialogId, activeDialogName)) && (
+                    <button
+                      type="button"
+                      onClick={handleResetCurrentDialogSettings}
+                      disabled={isSavingSettings}
+                      className="w-full text-center text-[11px] text-slate-400 hover:text-red-400 transition-colors py-1 flex items-center justify-center gap-1"
+                    >
+                      <RotateCcw size={11} />
+                      Reset default &ldquo;{activeDialogName}&rdquo; ke bawaan sistem
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1724,10 +1811,10 @@ export default function GeneratorPage() {
               {isAdmin && (
                 <button
                   type="button"
-                  onClick={() => handleSaveThumbnailSettings('dialog')}
+                  onClick={handleSaveThumbnailSettings}
                   disabled={isSavingSettings}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-orange-200 bg-white hover:bg-orange-50 text-orange-600 shadow-xs transition-all"
-                  title={`Simpan settingan generator saat ini sebagai default untuk acara ${activeDialogName}`}
+                  title={`Simpan settingan generator saat ini sebagai default khusus untuk acara ${activeDialogName}`}
                 >
                   <Save size={13} />
                   <span>Simpan Default ({activeDialogName})</span>
