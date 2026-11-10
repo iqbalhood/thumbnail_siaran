@@ -65,6 +65,7 @@ export interface ThumbnailData {
   eventInfoXSpacing?: number;
   socialMediaXOffset?: number;
   socialMediaYOffset?: number;
+  socialMediaScale?: number;
   promoXOffset?: number;
   promoYOffset?: number;
   phoneNumber?: string;
@@ -113,6 +114,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     eventInfoXSpacing = 0,
     socialMediaXOffset = 0,
     socialMediaYOffset = 0,
+    socialMediaScale = 100,
     promoXOffset = 0,
     promoYOffset = 0,
     phoneNumber = '0811 6881 2123',
@@ -426,16 +428,21 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         )}
 
         {/* 9. Footer Medsos Image (Untouched image placed directly at bottom-left corner, scaled -20%) */}
-        {showSocialMediaLogo !== false && (
-          <image
-            href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
-            x={60 + socialMediaXOffset}
-            y={623 + socialMediaYOffset}
-            width={462}
-            height={38}
-            preserveAspectRatio="xMinYMid meet"
-          />
-        )}
+        {showSocialMediaLogo !== false && (() => {
+          const socW = Math.round(462 * (socialMediaScale / 100));
+          const socH = Math.round(38 * (socialMediaScale / 100));
+          const socY = Math.round(623 - (socH - 38) / 2) + socialMediaYOffset;
+          return (
+            <image
+              href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
+              x={60 + socialMediaXOffset}
+              y={socY}
+              width={socW}
+              height={socH}
+              preserveAspectRatio="xMinYMid meet"
+            />
+          );
+        })()}
 
         {/* 10. Info Promosi Bubble */}
         <g transform={`translate(${550 + promoXOffset}, ${620 + promoYOffset})`}>

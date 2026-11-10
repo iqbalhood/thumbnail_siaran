@@ -63,6 +63,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     eventInfoXSpacing = 0,
     socialMediaXOffset = 0,
     socialMediaYOffset = 0,
+    socialMediaScale = 100,
     promoXOffset = 0,
     promoYOffset = 0,
     phoneNumber = '0811 6881 2123',
@@ -463,16 +464,21 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         </g>
 
         {/* 10. Footer Medsos Image (Untouched image placed directly at bottom-left corner, scaled -20%) */}
-        {showSocialMediaLogo !== false && (
-          <image
-            href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
-            x={50 + socialMediaXOffset}
-            y={1246 + socialMediaYOffset}
-            width={432}
-            height={36}
-            preserveAspectRatio="xMinYMid meet"
-          />
-        )}
+        {showSocialMediaLogo !== false && (() => {
+          const socW = Math.round(432 * (socialMediaScale / 100));
+          const socH = Math.round(36 * (socialMediaScale / 100));
+          const socY = Math.round(1246 - (socH - 36) / 2) + socialMediaYOffset;
+          return (
+            <image
+              href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
+              x={50 + socialMediaXOffset}
+              y={socY}
+              width={socW}
+              height={socH}
+              preserveAspectRatio="xMinYMid meet"
+            />
+          );
+        })()}
       </svg>
     </div>
   );

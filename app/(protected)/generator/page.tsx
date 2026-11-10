@@ -76,6 +76,7 @@ export interface FormatStyleConfig {
   eventInfoXSpacing: number;
   socialMediaXOffset: number;
   socialMediaYOffset: number;
+  socialMediaScale: number;
   promoXOffset: number;
   promoYOffset: number;
 }
@@ -208,6 +209,7 @@ const createDefaultFormatStyle = (): FormatStyleConfig => {
     eventInfoXSpacing: 0,
     socialMediaXOffset: 0,
     socialMediaYOffset: 0,
+    socialMediaScale: 100,
     promoXOffset: 0,
     promoYOffset: 0,
   };
@@ -251,6 +253,7 @@ const extractFormatStyleFromObject = (raw: any, fallback: FormatStyleConfig): Fo
     eventInfoXSpacing: raw.eventInfoXSpacing !== undefined ? Number(raw.eventInfoXSpacing) : fallback.eventInfoXSpacing,
     socialMediaXOffset: raw.socialMediaXOffset !== undefined ? Number(raw.socialMediaXOffset) : fallback.socialMediaXOffset,
     socialMediaYOffset: raw.socialMediaYOffset !== undefined ? Number(raw.socialMediaYOffset) : fallback.socialMediaYOffset,
+    socialMediaScale: raw.socialMediaScale !== undefined ? Number(raw.socialMediaScale) : fallback.socialMediaScale,
     promoXOffset: raw.promoXOffset !== undefined ? Number(raw.promoXOffset) : fallback.promoXOffset,
     promoYOffset: raw.promoYOffset !== undefined ? Number(raw.promoYOffset) : fallback.promoYOffset,
   };
@@ -1951,7 +1954,7 @@ export default function GeneratorPage() {
                       </div>
 
                       {/* Gambar Sosial Media */}
-                      <div className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5">
+                      <div className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-slate-700">Gambar Sosmed</span>
                           <button
@@ -1966,35 +1969,66 @@ export default function GeneratorPage() {
                           </button>
                         </div>
                         {activeStyle.showSocialMediaLogo && (
-                          <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-200/60">
-                            <label className="cursor-pointer px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold inline-flex items-center gap-1">
-                              {isUploadingSocialMedia ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />}
-                              <span>Ganti</span>
-                              <input type="file" accept="image/*" onChange={handleSocialMediaLogoUpload} className="hidden" />
-                            </label>
-                            {(customSocialMediaLogo || getBrandingField('social_media_logo_url')) && (
-                              <button
-                                type="button"
-                                onClick={handleResetSocialMediaLogo}
-                                className="text-[10px] font-bold text-slate-500 hover:text-red-600"
-                              >
-                                Reset Bawaan
-                              </button>
-                            )}
+                          <div className="space-y-2 pt-1.5 border-t border-slate-200/60">
+                            <div className="flex items-center justify-between gap-1">
+                              <label className="cursor-pointer px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold inline-flex items-center gap-1">
+                                {isUploadingSocialMedia ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />}
+                                <span>Ganti</span>
+                                <input type="file" accept="image/*" onChange={handleSocialMediaLogoUpload} className="hidden" />
+                              </label>
+                              {(customSocialMediaLogo || getBrandingField('social_media_logo_url')) && (
+                                <button
+                                  type="button"
+                                  onClick={handleResetSocialMediaLogo}
+                                  className="text-[10px] font-bold text-slate-500 hover:text-red-600"
+                                >
+                                  Reset Bawaan
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Ukuran Gambar Sosmed */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-semibold text-slate-500">Ukuran Sosmed</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-bold text-orange-600">{activeStyle.socialMediaScale}%</span>
+                                  {activeStyle.socialMediaScale !== 100 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateStyle({ socialMediaScale: 100 })}
+                                      className="text-[9px] font-bold text-slate-400 hover:text-orange-600"
+                                    >
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <input
+                                type="range"
+                                min={50}
+                                max={200}
+                                step={5}
+                                value={activeStyle.socialMediaScale}
+                                onChange={(e) => updateStyle({ socialMediaScale: Number(e.target.value) })}
+                                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Quick Posisi Sosmed & Info Kerjasama di Section 3 */}
+                    {/* Quick Posisi & Ukuran Sosmed & Info Kerjasama di Section 3 */}
                     <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                           <Move size={13} className="text-orange-500" />
-                          Posisi Sosmed & Info Kerjasama
+                          Ukuran & Posisi Sosmed / Info Kerjasama
                         </span>
                         {(activeStyle.socialMediaXOffset !== 0 ||
                           activeStyle.socialMediaYOffset !== 0 ||
+                          activeStyle.socialMediaScale !== 100 ||
                           activeStyle.promoXOffset !== 0 ||
                           activeStyle.promoYOffset !== 0) && (
                           <button
@@ -2003,18 +2037,37 @@ export default function GeneratorPage() {
                               updateStyle({
                                 socialMediaXOffset: 0,
                                 socialMediaYOffset: 0,
+                                socialMediaScale: 100,
                                 promoXOffset: 0,
                                 promoYOffset: 0,
                               })
                             }
                             className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
                           >
-                            Reset Posisi
+                            Reset
                           </button>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>🔍 Ukuran Gambar Sosmed</span>
+                          <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                            {activeStyle.socialMediaScale}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="50"
+                          max="200"
+                          step="5"
+                          value={activeStyle.socialMediaScale}
+                          onChange={(e) => updateStyle({ socialMediaScale: Number(e.target.value) })}
+                          className="w-full accent-orange-500 cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1.5 border-t border-slate-200/60">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-[11px] text-slate-600">
                             <span>↔️ Sosmed (Kiri / Kanan)</span>
@@ -2485,12 +2538,13 @@ export default function GeneratorPage() {
                       </div>
                     </div>
 
-                    {/* D. Posisi Sosial Media & Info Promosi Kerjasama */}
+                    {/* D. Ukuran & Posisi Sosial Media & Info Promosi Kerjasama */}
                     <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700">Posisi Sosmed & Info Kerjasama</span>
+                        <span className="text-xs font-bold text-slate-700">Ukuran & Posisi Sosmed / Info Kerjasama</span>
                         {(activeStyle.socialMediaXOffset !== 0 ||
                           activeStyle.socialMediaYOffset !== 0 ||
+                          activeStyle.socialMediaScale !== 100 ||
                           activeStyle.promoXOffset !== 0 ||
                           activeStyle.promoYOffset !== 0) && (
                           <button
@@ -2499,6 +2553,7 @@ export default function GeneratorPage() {
                               updateStyle({
                                 socialMediaXOffset: 0,
                                 socialMediaYOffset: 0,
+                                socialMediaScale: 100,
                                 promoXOffset: 0,
                                 promoYOffset: 0,
                               })
@@ -2510,7 +2565,25 @@ export default function GeneratorPage() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>🔍 Ukuran Gambar Sosmed</span>
+                          <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                            {activeStyle.socialMediaScale}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="50"
+                          max="200"
+                          step="5"
+                          value={activeStyle.socialMediaScale}
+                          onChange={(e) => updateStyle({ socialMediaScale: Number(e.target.value) })}
+                          className="w-full accent-orange-500 cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1.5 border-t border-slate-200/60">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-[11px] text-slate-600">
                             <span>↔️ Sosmed (Kiri / Kanan)</span>
