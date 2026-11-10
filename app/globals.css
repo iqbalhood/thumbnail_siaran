@@ -21,3 +21,47 @@ body {
 body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
+
+/* ===== Mobile / Touch UX Optimizations ===== */
+
+/* Remove 300ms double-tap delay & tap highlight on touch devices */
+button,
+a,
+label,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Larger touch area for native range sliders on touch screens */
+@media (pointer: coarse) {
+  input[type='range']:not(.appearance-none) {
+    height: 28px;
+  }
+}
+
+/* Prevent iOS auto-zoom when focusing text inputs on small screens */
+@media (max-width: 640px) {
+  input[type='text'],
+  input[type='search'],
+  input[type='email'],
+  input[type='password'],
+  input[type='tel'],
+  input[type='number'],
+  input:not([type]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Hide scrollbar for horizontally scrollable tab rows */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

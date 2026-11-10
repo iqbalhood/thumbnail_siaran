@@ -23,14 +23,14 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white border-b border-slate-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <nav className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
         {/* Logo Section */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <Radio className="text-white" size={20} />
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-500/20">
+            <Radio className="text-white" size={18} />
           </div>
-          <div>
+          <div className="hidden sm:block">
             <h1 className="text-sm font-bold text-slate-900 leading-tight">
               Thumbnail Generator
             </h1>
@@ -40,8 +40,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="hidden md:flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100">
+        {/* Navigation Tabs (Unified for Mobile & Desktop) */}
+        <div className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -49,49 +49,30 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-sm font-semibold transition-all ${
                   isActive
-                    ? 'bg-white text-orange-600 shadow-sm'
+                    ? 'bg-white text-orange-600 shadow-xs'
                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                <Icon size={16} />
-                {item.name}
+                <Icon size={14} className="shrink-0" />
+                <span>{item.name}</span>
               </Link>
             );
           })}
         </div>
 
         {/* User Action */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center shrink-0">
           <Button
             onClick={handleLogout}
-            className="text-slate-500 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors group"
+            className="text-slate-500 hover:text-red-600 hover:bg-red-50 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors group"
+            title="Keluar"
           >
-            <LogOut size={18} className="md:mr-2 group-hover:translate-x-1 transition-transform" />
+            <LogOut size={17} className="md:mr-2 group-hover:translate-x-0.5 transition-transform" />
             <span className="hidden md:inline">Keluar</span>
           </Button>
         </div>
-      </div>
-
-      {/* Mobile Nav */}
-      <div className="md:hidden border-t border-slate-50 flex items-center justify-around py-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-[10px] font-medium transition-all ${
-                isActive ? 'text-orange-600' : 'text-slate-400'
-              }`}
-            >
-              <Icon size={20} />
-              {item.name}
-            </Link>
-          );
-        })}
       </div>
     </nav>
   );

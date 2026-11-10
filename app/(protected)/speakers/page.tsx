@@ -89,7 +89,7 @@ export default function SpeakersPage() {
   };
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 space-y-8">
+    <main className="mx-auto max-w-5xl px-3 sm:px-6 py-5 sm:py-10 space-y-6 sm:space-y-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">

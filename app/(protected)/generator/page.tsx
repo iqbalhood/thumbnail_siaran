@@ -277,6 +277,9 @@ export default function GeneratorPage() {
   });
   const [editTarget, setEditTarget] = useState<'both' | 'youtube' | 'poster'>('both');
   const [previewLayout, setPreviewLayout] = useState<'side_by_side' | 'stacked'>('side_by_side');
+  // Mobile-only UI state: sticky mini live preview while editing on phone
+  const [mobilePreviewFormat, setMobilePreviewFormat] = useState<'youtube' | 'poster'>('youtube');
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState<boolean>(true);
 
   // Shared Broadcast Content State
   const [title, setTitle] = useState('SEKOLAH RAKYAT DI ACEH:\nMENJAWAB TANTANGAN PENDIDIKAN PINGGIRAN');
@@ -1027,36 +1030,95 @@ export default function GeneratorPage() {
   const showPosisi = activeEditorTab === 'all' || activeEditorTab === 'posisi';
 
   return (
-    <main className="mx-auto max-w-[1440px] px-4 sm:px-6 py-6">
-      <div className="grid lg:grid-cols-12 gap-6 items-start">
+    <main className="mx-auto max-w-[1440px] px-2.5 sm:px-6 py-3 sm:py-6">
+      <div className="grid lg:grid-cols-12 gap-4 sm:gap-6 items-start">
         
         {/* LEFT PANEL: Ergonomic & Structured Editor */}
-        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col lg:max-h-[calc(100vh-5.5rem)] lg:sticky lg:top-20">
+        <div className="lg:col-span-5 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 lg:overflow-hidden flex flex-col lg:max-h-[calc(100vh-5.5rem)] lg:sticky lg:top-20">
           
-          {/* Sticky Top Header + Quick Category Tabs */}
-          <div className="p-4 sm:p-5 bg-white border-b border-slate-100 space-y-3 shrink-0 z-20">
+          {/* Sticky Top Header + Quick Category Tabs (sticky below navbar on mobile) */}
+          <div className="sticky top-14 lg:static p-3 sm:p-5 bg-white/95 backdrop-blur-md lg:bg-white border-b border-slate-100 space-y-2.5 sm:space-y-3 shrink-0 z-30 rounded-t-2xl sm:rounded-t-3xl shadow-sm lg:shadow-none">
             <div className="flex items-center justify-between gap-2">
-              <div>
-                <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles size={19} className="text-orange-500 shrink-0" />
-                  Panel Editor Thumbnail & Poster
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-lg font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                  <Sparkles size={17} className="text-orange-500 shrink-0" />
+                  <span className="truncate">Panel Editor Thumbnail & Poster</span>
                 </h1>
-                <p className="text-xs text-slate-500">
+                <p className="text-[11px] sm:text-xs text-slate-500 truncate">
                   Acara aktif: <strong className="text-orange-600">{activeDialogName}</strong> ({selectedProgram})
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={fetchInitialData}
-                className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-                title="Muat ulang data dari server"
-              >
-                <RefreshCw size={15} />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Mobile: toggle mini live preview */}
+                <button
+                  type="button"
+                  onClick={() => setMobilePreviewOpen((v) => !v)}
+                  className={`lg:hidden px-2.5 py-2 rounded-xl border text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                    mobilePreviewOpen
+                      ? 'border-orange-200 bg-orange-50 text-orange-700'
+                      : 'border-slate-200 text-slate-500'
+                  }`}
+                  title="Tampilkan / sembunyikan preview"
+                >
+                  {mobilePreviewOpen ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <span>Preview</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={fetchInitialData}
+                  className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                  title="Muat ulang data dari server"
+                >
+                  <RefreshCw size={15} />
+                </button>
+              </div>
             </div>
 
-            {/* Category Navigation Tabs */}
-            <div className="grid grid-cols-5 gap-1 bg-slate-100 p-1 rounded-xl">
+            {/* Mobile-only sticky mini live preview (so changes are visible while editing) */}
+            {mobilePreviewOpen && (
+              <div className="lg:hidden space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setMobilePreviewFormat('youtube')}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+                        mobilePreviewFormat === 'youtube' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-500'
+                      }`}
+                    >
+                      <Tv size={12} /> 16:9
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobilePreviewFormat('poster')}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+                        mobilePreviewFormat === 'poster' ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-500'
+                      }`}
+                    >
+                      <Smartphone size={12} /> 4:5
+                    </button>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Preview
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-100 p-1.5 flex justify-center">
+                  {mobilePreviewFormat === 'youtube' ? (
+                    <div className="w-full max-w-[420px]">
+                      <ThumbnailPreview data={youtubePreviewData} id="thumbnail-svg-mobile" />
+                    </div>
+                  ) : (
+                    <div className="w-[min(100%,26vh)]">
+                      <PosterPreview data={posterPreviewData} id="poster-svg-mobile" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Category Navigation Tabs (horizontally scrollable on mobile) */}
+            <div className="flex lg:grid lg:grid-cols-5 gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
               {[
                 { id: 'all', label: 'Semua' },
                 { id: 'konten', label: '1. Konten' },
@@ -1068,7 +1130,7 @@ export default function GeneratorPage() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveEditorTab(tab.id as any)}
-                  className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all text-center truncate ${
+                  className={`shrink-0 py-2 lg:py-1.5 px-3 lg:px-1 rounded-lg text-xs lg:text-[11px] font-bold transition-all text-center whitespace-nowrap lg:truncate ${
                     activeEditorTab === tab.id
                       ? 'bg-white text-orange-600 shadow-xs'
                       : 'text-slate-500 hover:text-slate-800'
@@ -1081,7 +1143,7 @@ export default function GeneratorPage() {
           </div>
 
           {/* Scrollable Form Body */}
-          <div className="p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+          <div className="p-3 sm:p-5 space-y-4 lg:overflow-y-auto custom-scrollbar flex-1">
             
             {/* SECTION 1: ACARA, JUDUL & JADWAL */}
             {showKonten && (
@@ -1322,7 +1384,7 @@ export default function GeneratorPage() {
                               key={n}
                               type="button"
                               onClick={() => setSpeakerCount(n)}
-                              className={`w-7 h-7 rounded-md text-xs font-bold transition-all ${
+                              className={`w-9 h-9 sm:w-7 sm:h-7 rounded-md text-sm sm:text-xs font-bold transition-all ${
                                 speakerCount === n ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-400 hover:text-slate-600'
                               }`}
                             >
@@ -2666,7 +2728,7 @@ export default function GeneratorPage() {
           </div>
 
           {/* Sticky Bottom Action Bar (Save Preset 16:9 & 4:5 + Download Buttons) */}
-          <div className="p-4 bg-slate-50 border-t border-slate-200/80 space-y-2.5 shrink-0 z-20">
+          <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200/80 space-y-2.5 shrink-0 z-20 rounded-b-2xl sm:rounded-b-3xl lg:rounded-none">
             {saveSuccessMsg && (
               <div className="p-2 bg-emerald-500 text-white rounded-xl text-xs flex items-center gap-2 font-bold shadow-xs">
                 <Check size={14} className="shrink-0" />
@@ -2700,7 +2762,7 @@ export default function GeneratorPage() {
                     type="button"
                     onClick={() => handleSaveThumbnailSettings('both')}
                     disabled={isSavingSettings}
-                    className="col-span-6 py-2 px-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                    className="col-span-6 py-2.5 sm:py-2 px-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
                   >
                     {isSavingSettings ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                     <span>Simpan 16:9 & 4:5</span>
@@ -2709,7 +2771,7 @@ export default function GeneratorPage() {
                     type="button"
                     onClick={() => handleSaveThumbnailSettings('youtube')}
                     disabled={isSavingSettings}
-                    className="col-span-3 py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 border border-slate-700 transition-all"
+                    className="col-span-3 py-2.5 sm:py-2 px-1.5 sm:px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 border border-slate-700 transition-all"
                     title="Simpan khusus settingan 16:9 (YouTube) untuk acara ini"
                   >
                     <Tv size={11} className="text-orange-400" />
@@ -2719,7 +2781,7 @@ export default function GeneratorPage() {
                     type="button"
                     onClick={() => handleSaveThumbnailSettings('poster')}
                     disabled={isSavingSettings}
-                    className="col-span-3 py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 border border-slate-700 transition-all"
+                    className="col-span-3 py-2.5 sm:py-2 px-1.5 sm:px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 border border-slate-700 transition-all"
                     title="Simpan khusus settingan 4:5 (Poster) untuk acara ini"
                   >
                     <Smartphone size={11} className="text-orange-400" />
@@ -2776,8 +2838,8 @@ export default function GeneratorPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Switch between Side-by-Side vs Stacked Large View */}
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+              {/* Switch between Side-by-Side vs Stacked Large View (desktop only) */}
+              <div className="hidden xl:flex items-center bg-slate-100 p-1 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setPreviewLayout('side_by_side')}
@@ -2820,7 +2882,7 @@ export default function GeneratorPage() {
             <div
               className={`${
                 previewLayout === 'side_by_side' ? 'xl:col-span-7' : 'w-full'
-              } bg-white rounded-3xl border-2 transition-all p-4 space-y-3 shadow-lg ${
+              } bg-white rounded-2xl sm:rounded-3xl border-2 transition-all p-3 sm:p-4 space-y-3 shadow-lg ${
                 editTarget === 'youtube'
                   ? 'border-orange-500 ring-4 ring-orange-500/10'
                   : 'border-slate-200/80'
@@ -2839,7 +2901,7 @@ export default function GeneratorPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setEditTarget(editTarget === 'youtube' ? 'both' : 'youtube')}
@@ -2882,7 +2944,7 @@ export default function GeneratorPage() {
             <div
               className={`${
                 previewLayout === 'side_by_side' ? 'xl:col-span-5' : 'w-full'
-              } bg-white rounded-3xl border-2 transition-all p-4 space-y-3 shadow-lg ${
+              } bg-white rounded-2xl sm:rounded-3xl border-2 transition-all p-3 sm:p-4 space-y-3 shadow-lg ${
                 editTarget === 'poster'
                   ? 'border-orange-500 ring-4 ring-orange-500/10'
                   : 'border-slate-200/80'
@@ -2901,7 +2963,7 @@ export default function GeneratorPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setEditTarget(editTarget === 'poster' ? 'both' : 'poster')}
