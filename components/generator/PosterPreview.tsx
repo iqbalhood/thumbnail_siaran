@@ -36,8 +36,10 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     rriLogoUrl,
     programLogoUrl,
     hutRiLogoUrl,
+    socialMediaLogoUrl,
     showRriLogo = true,
     showProgramLogo = true,
+    showSocialMediaLogo = true,
     showHutRiLogo,
     rriLogoPosition = 'left',
     programLogoPosition = 'right',
@@ -396,17 +398,17 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           </text>
         )}
 
-        {/* 9. Footer Medsos Container (Official RRI Banda Aceh banner asset - tight without extra background padding) */}
-        <g transform="translate(50, 1250)">
+        {/* 9. Footer Medsos Image (Untouched image placed directly at bottom-left corner) */}
+        {showSocialMediaLogo !== false && (
           <image
-            href={RRI_SOCIAL_MEDIA_IMAGE_BASE64}
-            x={0}
-            y={0}
-            width={530}
-            height={27}
-            preserveAspectRatio="xMidYMid meet"
+            href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
+            x={50}
+            y={1240}
+            width={540}
+            height={45}
+            preserveAspectRatio="xMinYMid meet"
           />
-        </g>
+        )}
 
         {/* 10. Info Promosi Bubble */}
         <g transform="translate(610, 1240)">

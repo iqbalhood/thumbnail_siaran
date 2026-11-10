@@ -11,6 +11,7 @@ import { DialogForm } from '@/components/settings/DialogForm';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { RRI_SOCIAL_MEDIA_IMAGE_PATH } from '@/lib/constants/socialMedia';
 import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone, Sparkles, RotateCcw, LayoutGrid, Sun, Moon } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -62,15 +63,56 @@ export default function SettingsPage() {
     }
   };
 
+  const getBrandingField = (key: string) => {
+    if (branding?.[key] !== undefined && branding?.[key] !== null) {
+      return branding[key];
+    }
+    return branding?.thumbnail_settings?.branding_assets?.[key] ?? null;
+  };
+
   const updateBranding = async (updates: any) => {
     try {
+      const existingThumbSettings =
+        branding?.thumbnail_settings && typeof branding.thumbnail_settings === 'object'
+          ? branding.thumbnail_settings
+          : {};
+      const existingAssets =
+        existingThumbSettings.branding_assets && typeof existingThumbSettings.branding_assets === 'object'
+          ? existingThumbSettings.branding_assets
+          : {};
+
+      const mergedThumbSettings = {
+        ...existingThumbSettings,
+        branding_assets: {
+          ...existingAssets,
+          ...updates,
+        },
+      };
+
+      // Try updating both top-level columns and thumbnail_settings.branding_assets
       const { error } = await (supabase
         .from('branding_settings') as any)
-        .update(updates)
+        .update({
+          ...updates,
+          thumbnail_settings: mergedThumbSettings,
+        })
         .eq('id', branding.id);
-      
-      if (error) throw error;
-      setBranding({ ...branding, ...updates });
+
+      if (error) {
+        // Fallback if a new column (e.g. social_media_logo_url) hasn't been migrated yet:
+        // store inside existing thumbnail_settings JSONB column
+        const { error: fallbackErr } = await (supabase
+          .from('branding_settings') as any)
+          .update({ thumbnail_settings: mergedThumbSettings })
+          .eq('id', branding.id);
+        if (fallbackErr) throw fallbackErr;
+      }
+
+      setBranding({
+        ...branding,
+        ...updates,
+        thumbnail_settings: mergedThumbSettings,
+      });
     } catch (error: any) {
       alert(`Gagal update branding: ${error.message}`);
     }
@@ -109,6 +151,7 @@ export default function SettingsPage() {
   const handleResetSingleDialogDefault = async (dialog: any) => {
     if (!confirm(`Reset settingan default untuk acara "${dialog.name}" ke setelan bawaan sistem?`)) return;
     try {
+      const existingAssets = branding?.thumbnail_settings?.branding_assets;
       const existingDialogsMap = { ...(branding?.thumbnail_settings?.dialogs || {}) };
       delete existingDialogsMap[dialog.id];
       if (dialog.name) {
@@ -116,6 +159,7 @@ export default function SettingsPage() {
       }
 
       const newSettingsPayload = {
+        ...(existingAssets ? { branding_assets: existingAssets } : {}),
         dialogs: existingDialogsMap,
       };
 
@@ -144,8 +188,14 @@ export default function SettingsPage() {
   const handleResetThumbnailDefaults = async () => {
     if (!confirm('Apakah Anda yakin ingin menghapus semua settingan default acara dan mengembalikan semuanya ke setelan awal sistem?')) return;
     try {
+      const existingAssets = branding?.thumbnail_settings?.branding_assets;
+      const newSettingsPayload = {
+        ...(existingAssets ? { branding_assets: existingAssets } : {}),
+        dialogs: {},
+      };
+
       const { error } = await (supabase.from('branding_settings') as any)
-        .update({ thumbnail_settings: { dialogs: {} } })
+        .update({ thumbnail_settings: newSettingsPayload })
         .eq('id', branding.id);
       if (error) throw error;
 
@@ -159,7 +209,7 @@ export default function SettingsPage() {
         // Non-blocking
       }
 
-      setBranding({ ...branding, thumbnail_settings: { dialogs: {} } });
+      setBranding({ ...branding, thumbnail_settings: newSettingsPayload });
       setDialogs((prev) => prev.map((d) => ({ ...d, thumbnail_settings: null })));
       alert('Semua settingan default acara berhasil di-reset ke setelan awal sistem.');
     } catch (err: any) {
@@ -342,8 +392,8 @@ export default function SettingsPage() {
                   label="Logo RRI"
                   sublabel="Varian Dark / Gelap (PNG transparan)"
                   variant="dark"
-                  currentUrl={branding?.rri_logo_dark_url}
-                  currentPath={branding?.rri_logo_dark_path}
+                  currentUrl={getBrandingField('rri_logo_dark_url')}
+                  currentPath={getBrandingField('rri_logo_dark_path')}
                   bucket="logos"
                   onUploadSuccess={(url, path) => updateBranding({ rri_logo_dark_url: url, rri_logo_dark_path: path })}
                   onDeleteSuccess={() => updateBranding({ rri_logo_dark_url: null, rri_logo_dark_path: null })}
@@ -379,8 +429,8 @@ export default function SettingsPage() {
                   label="Logo PRO 1"
                   sublabel="Varian Dark / Gelap (PNG transparan)"
                   variant="dark"
-                  currentUrl={branding?.pro1_logo_dark_url}
-                  currentPath={branding?.pro1_logo_dark_path}
+                  currentUrl={getBrandingField('pro1_logo_dark_url')}
+                  currentPath={getBrandingField('pro1_logo_dark_path')}
                   bucket="logos"
                   onUploadSuccess={(url, path) => updateBranding({ pro1_logo_dark_url: url, pro1_logo_dark_path: path })}
                   onDeleteSuccess={() => updateBranding({ pro1_logo_dark_url: null, pro1_logo_dark_path: null })}
@@ -416,8 +466,8 @@ export default function SettingsPage() {
                   label="Logo PRO 2"
                   sublabel="Varian Dark / Gelap (PNG transparan)"
                   variant="dark"
-                  currentUrl={branding?.pro2_logo_dark_url}
-                  currentPath={branding?.pro2_logo_dark_path}
+                  currentUrl={getBrandingField('pro2_logo_dark_url')}
+                  currentPath={getBrandingField('pro2_logo_dark_path')}
                   bucket="logos"
                   onUploadSuccess={(url, path) => updateBranding({ pro2_logo_dark_url: url, pro2_logo_dark_path: path })}
                   onDeleteSuccess={() => updateBranding({ pro2_logo_dark_url: null, pro2_logo_dark_path: null })}
@@ -453,8 +503,8 @@ export default function SettingsPage() {
                   label="Logo PRO 4"
                   sublabel="Varian Dark / Gelap (PNG transparan)"
                   variant="dark"
-                  currentUrl={branding?.pro4_logo_dark_url}
-                  currentPath={branding?.pro4_logo_dark_path}
+                  currentUrl={getBrandingField('pro4_logo_dark_url')}
+                  currentPath={getBrandingField('pro4_logo_dark_path')}
                   bucket="logos"
                   onUploadSuccess={(url, path) => updateBranding({ pro4_logo_dark_url: url, pro4_logo_dark_path: path })}
                   onDeleteSuccess={() => updateBranding({ pro4_logo_dark_url: null, pro4_logo_dark_path: null })}
@@ -490,13 +540,36 @@ export default function SettingsPage() {
                   label="Logo HUT RI"
                   sublabel="Varian Dark / Gelap (PNG transparan)"
                   variant="dark"
-                  currentUrl={branding?.hut_ri_logo_dark_url}
-                  currentPath={branding?.hut_ri_logo_dark_path}
+                  currentUrl={getBrandingField('hut_ri_logo_dark_url')}
+                  currentPath={getBrandingField('hut_ri_logo_dark_path')}
                   bucket="logos"
                   onUploadSuccess={(url, path) => updateBranding({ hut_ri_logo_dark_url: url, hut_ri_logo_dark_path: path })}
                   onDeleteSuccess={() => updateBranding({ hut_ri_logo_dark_url: null, hut_ri_logo_dark_path: null })}
                 />
               )}
+            </div>
+          </div>
+
+          {/* 6. Gambar / Kontainer Sosial Media (Pojok Kiri Bawah) */}
+          <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
+                Gambar / Kontainer Sosial Media (Pojok Kiri Bawah)
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400">Tampil langsung di pojok kiri bawah tanpa editan</span>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              <LogoUpload
+                label="Gambar Sosial Media"
+                sublabel="Upload gambar kontainer sosmed (PNG/JPG). Jika dihapus, otomatis kembali ke gambar bawaan."
+                variant="dark"
+                currentUrl={getBrandingField('social_media_logo_url') || RRI_SOCIAL_MEDIA_IMAGE_PATH}
+                currentPath={getBrandingField('social_media_logo_path')}
+                bucket="logos"
+                onUploadSuccess={(url, path) => updateBranding({ social_media_logo_url: url, social_media_logo_path: path })}
+                onDeleteSuccess={() => updateBranding({ social_media_logo_url: null, social_media_logo_path: null })}
+              />
             </div>
           </div>
         </div>

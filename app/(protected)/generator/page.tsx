@@ -176,6 +176,9 @@ export default function GeneratorPage() {
   // Logo visibility & position controls
   const [showRriLogo, setShowRriLogo] = useState(true);
   const [showProgramLogo, setShowProgramLogo] = useState(true);
+  const [showSocialMediaLogo, setShowSocialMediaLogo] = useState(true);
+  const [customSocialMediaLogo, setCustomSocialMediaLogo] = useState<string | null>(null);
+  const [isUploadingSocialMedia, setIsUploadingSocialMedia] = useState(false);
   const [showHutRiLogo, setShowHutRiLogo] = useState<boolean>(() => 
     new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS')
   );
@@ -244,6 +247,7 @@ export default function GeneratorPage() {
       selectedProgram: inferProgramFromDialogName(dialogName),
       showRriLogo: true,
       showProgramLogo: true,
+      showSocialMediaLogo: true,
       showHutRiLogo: isAug,
       showEventName: true,
       rriLogoPosition: 'left' as 'left' | 'right',
@@ -305,6 +309,7 @@ export default function GeneratorPage() {
     setSelectedProgram(merged.selectedProgram || defaults.selectedProgram);
     setShowRriLogo(merged.showRriLogo !== undefined ? merged.showRriLogo : true);
     setShowProgramLogo(merged.showProgramLogo !== undefined ? merged.showProgramLogo : true);
+    setShowSocialMediaLogo(merged.showSocialMediaLogo !== undefined ? merged.showSocialMediaLogo : true);
     setShowHutRiLogo(merged.showHutRiLogo !== undefined ? merged.showHutRiLogo : defaults.showHutRiLogo);
     setShowEventName(merged.showEventName !== undefined ? merged.showEventName : true);
     setRriLogoPosition(merged.rriLogoPosition || 'left');
@@ -422,6 +427,7 @@ export default function GeneratorPage() {
         selectedProgram,
         showRriLogo,
         showProgramLogo,
+        showSocialMediaLogo,
         showHutRiLogo,
         showEventName,
         rriLogoPosition,
@@ -461,8 +467,9 @@ export default function GeneratorPage() {
         ...(currentDialog?.name ? { [currentDialog.name]: currentConfig } : {}),
       };
 
-      // Store strictly inside dialogs map so each poster/acara has its own isolated preset
+      // Store strictly inside dialogs map while preserving branding_assets
       const newSettingsPayload = {
+        ...(existingSettings.branding_assets ? { branding_assets: existingSettings.branding_assets } : {}),
         dialogs: newDialogsMap,
       };
 
@@ -527,6 +534,7 @@ export default function GeneratorPage() {
       }
 
       const newSettingsPayload = {
+        ...(existingSettings.branding_assets ? { branding_assets: existingSettings.branding_assets } : {}),
         dialogs: existingDialogsMap,
       };
 
@@ -609,30 +617,138 @@ export default function GeneratorPage() {
 
   const brandingAny = branding as any;
 
+  const getBrandingField = (key: string) => {
+    if (brandingAny?.[key] !== undefined && brandingAny?.[key] !== null) {
+      return brandingAny[key];
+    }
+    return brandingAny?.thumbnail_settings?.branding_assets?.[key] ?? null;
+  };
+
+  const handleSocialMediaLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Immediate preview via DataURL
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setCustomSocialMediaLogo(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    setIsUploadingSocialMedia(true);
+    try {
+      const fileName = `social-media-${Date.now()}`;
+      const { publicUrl, storagePath: path } = await uploadFile('logos', fileName, file);
+      setCustomSocialMediaLogo(publicUrl);
+
+      // Persist in branding_settings so it stays saved across reloads
+      if (branding?.id) {
+        const existingThumb =
+          brandingAny?.thumbnail_settings && typeof brandingAny.thumbnail_settings === 'object'
+            ? brandingAny.thumbnail_settings
+            : {};
+        const mergedThumb = {
+          ...existingThumb,
+          branding_assets: {
+            ...(existingThumb.branding_assets || {}),
+            social_media_logo_url: publicUrl,
+            social_media_logo_path: path,
+          },
+        };
+        const { error } = await (supabase.from('branding_settings') as any)
+          .update({
+            social_media_logo_url: publicUrl,
+            social_media_logo_path: path,
+            thumbnail_settings: mergedThumb,
+          })
+          .eq('id', branding.id);
+        if (error) {
+          await (supabase.from('branding_settings') as any)
+            .update({ thumbnail_settings: mergedThumb })
+            .eq('id', branding.id);
+        }
+        setBranding({
+          ...branding,
+          social_media_logo_url: publicUrl,
+          social_media_logo_path: path,
+          thumbnail_settings: mergedThumb,
+        });
+      }
+    } catch (err) {
+      console.warn('Social media image upload note:', err);
+    } finally {
+      setIsUploadingSocialMedia(false);
+    }
+  };
+
+  const handleResetSocialMediaLogo = async () => {
+    setCustomSocialMediaLogo(null);
+    if (!branding?.id) return;
+    try {
+      const existingThumb =
+        brandingAny?.thumbnail_settings && typeof brandingAny.thumbnail_settings === 'object'
+          ? brandingAny.thumbnail_settings
+          : {};
+      const mergedThumb = {
+        ...existingThumb,
+        branding_assets: {
+          ...(existingThumb.branding_assets || {}),
+          social_media_logo_url: null,
+          social_media_logo_path: null,
+        },
+      };
+      const { error } = await (supabase.from('branding_settings') as any)
+        .update({
+          social_media_logo_url: null,
+          social_media_logo_path: null,
+          thumbnail_settings: mergedThumb,
+        })
+        .eq('id', branding.id);
+      if (error) {
+        await (supabase.from('branding_settings') as any)
+          .update({ thumbnail_settings: mergedThumb })
+          .eq('id', branding.id);
+      }
+      setBranding({
+        ...branding,
+        social_media_logo_url: null,
+        social_media_logo_path: null,
+        thumbnail_settings: mergedThumb,
+      });
+    } catch (err) {
+      console.warn('Reset social media logo note:', err);
+    }
+  };
+
   // Resolve Logo URLs based on dark/white theme selection (with clean fallbacks)
   const resolvedRriLogoUrl = rriLogoTheme === 'dark'
-    ? (brandingAny?.rri_logo_dark_url || branding?.rri_logo_url || null)
-    : (branding?.rri_logo_url || brandingAny?.rri_logo_dark_url || null);
+    ? (getBrandingField('rri_logo_dark_url') || getBrandingField('rri_logo_url') || null)
+    : (getBrandingField('rri_logo_url') || getBrandingField('rri_logo_dark_url') || null);
 
   const resolvedProgramLogoUrl = (() => {
     if (selectedProgram === 'PRO 2') {
       return programLogoTheme === 'dark'
-        ? (brandingAny?.pro2_logo_dark_url || branding?.pro2_logo_url || null)
-        : (branding?.pro2_logo_url || brandingAny?.pro2_logo_dark_url || null);
+        ? (getBrandingField('pro2_logo_dark_url') || getBrandingField('pro2_logo_url') || null)
+        : (getBrandingField('pro2_logo_url') || getBrandingField('pro2_logo_dark_url') || null);
     }
     if (selectedProgram === 'PRO 4') {
       return programLogoTheme === 'dark'
-        ? (brandingAny?.pro4_logo_dark_url || branding?.pro4_logo_url || null)
-        : (branding?.pro4_logo_url || brandingAny?.pro4_logo_dark_url || null);
+        ? (getBrandingField('pro4_logo_dark_url') || getBrandingField('pro4_logo_url') || null)
+        : (getBrandingField('pro4_logo_url') || getBrandingField('pro4_logo_dark_url') || null);
     }
     return programLogoTheme === 'dark'
-      ? (brandingAny?.pro1_logo_dark_url || branding?.pro1_logo_url || null)
-      : (branding?.pro1_logo_url || brandingAny?.pro1_logo_dark_url || null);
+      ? (getBrandingField('pro1_logo_dark_url') || getBrandingField('pro1_logo_url') || null)
+      : (getBrandingField('pro1_logo_url') || getBrandingField('pro1_logo_dark_url') || null);
   })();
 
   const resolvedHutRiLogoUrl = hutRiLogoTheme === 'dark'
-    ? (brandingAny?.hut_ri_logo_dark_url || branding?.hut_ri_logo_url || null)
-    : (branding?.hut_ri_logo_url || brandingAny?.hut_ri_logo_dark_url || null);
+    ? (getBrandingField('hut_ri_logo_dark_url') || getBrandingField('hut_ri_logo_url') || null)
+    : (getBrandingField('hut_ri_logo_url') || getBrandingField('hut_ri_logo_dark_url') || null);
+
+  const resolvedSocialMediaLogoUrl =
+    customSocialMediaLogo || getBrandingField('social_media_logo_url') || null;
 
   const basePreviewData = {
     title,
@@ -643,8 +759,10 @@ export default function GeneratorPage() {
     rriLogoUrl: resolvedRriLogoUrl,
     programLogoUrl: resolvedProgramLogoUrl,
     hutRiLogoUrl: resolvedHutRiLogoUrl,
+    socialMediaLogoUrl: resolvedSocialMediaLogoUrl,
     showRriLogo,
     showProgramLogo,
+    showSocialMediaLogo,
     showHutRiLogo,
     showEventName,
     rriLogoPosition,
@@ -1283,6 +1401,59 @@ export default function GeneratorPage() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Gambar Kontainer Sosial Media (Pojok Kiri Bawah) */}
+                <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">Gambar Sosial Media (Pojok Kiri Bawah)</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSocialMediaLogo(!showSocialMediaLogo)}
+                      className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                        showSocialMediaLogo
+                          ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                          : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                      }`}
+                    >
+                      {showSocialMediaLogo ? <Eye size={12} /> : <EyeOff size={12} />}
+                      {showSocialMediaLogo ? 'Tampil' : 'Sembunyi'}
+                    </button>
+                  </div>
+
+                  {showSocialMediaLogo && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-200/60">
+                      <span className="text-[10px] text-slate-500">
+                        {resolvedSocialMediaLogoUrl ? 'Menggunakan gambar custom' : 'Menggunakan gambar bawaan'}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <label className="cursor-pointer px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold flex items-center gap-1 transition-colors">
+                          {isUploadingSocialMedia ? (
+                            <Loader2 size={11} className="animate-spin text-orange-400" />
+                          ) : (
+                            <Upload size={11} className="text-orange-400" />
+                          )}
+                          <span>Ganti Gambar</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSocialMediaLogoUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {resolvedSocialMediaLogoUrl && (
+                          <button
+                            type="button"
+                            onClick={handleResetSocialMediaLogo}
+                            className="px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold transition-colors"
+                            title="Kembalikan ke gambar sosmed bawaan"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
