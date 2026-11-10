@@ -74,6 +74,10 @@ export interface FormatStyleConfig {
   speakerRowSpacingOffset: number;
   eventInfoYOffset: number;
   eventInfoXSpacing: number;
+  socialMediaXOffset: number;
+  socialMediaYOffset: number;
+  promoXOffset: number;
+  promoYOffset: number;
 }
 
 // Helper to format Date string (YYYY-MM-DD) to Indonesian format (HARI, DD BULAN YYYY)
@@ -202,6 +206,10 @@ const createDefaultFormatStyle = (): FormatStyleConfig => {
     speakerRowSpacingOffset: 0,
     eventInfoYOffset: 0,
     eventInfoXSpacing: 0,
+    socialMediaXOffset: 0,
+    socialMediaYOffset: 0,
+    promoXOffset: 0,
+    promoYOffset: 0,
   };
 };
 
@@ -241,6 +249,10 @@ const extractFormatStyleFromObject = (raw: any, fallback: FormatStyleConfig): Fo
         : fallback.speakerRowSpacingOffset,
     eventInfoYOffset: raw.eventInfoYOffset !== undefined ? Number(raw.eventInfoYOffset) : fallback.eventInfoYOffset,
     eventInfoXSpacing: raw.eventInfoXSpacing !== undefined ? Number(raw.eventInfoXSpacing) : fallback.eventInfoXSpacing,
+    socialMediaXOffset: raw.socialMediaXOffset !== undefined ? Number(raw.socialMediaXOffset) : fallback.socialMediaXOffset,
+    socialMediaYOffset: raw.socialMediaYOffset !== undefined ? Number(raw.socialMediaYOffset) : fallback.socialMediaYOffset,
+    promoXOffset: raw.promoXOffset !== undefined ? Number(raw.promoXOffset) : fallback.promoXOffset,
+    promoYOffset: raw.promoYOffset !== undefined ? Number(raw.promoYOffset) : fallback.promoYOffset,
   };
 };
 
@@ -1974,6 +1986,111 @@ export default function GeneratorPage() {
                       </div>
                     </div>
 
+                    {/* Quick Posisi Sosmed & Info Kerjasama di Section 3 */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Move size={13} className="text-orange-500" />
+                          Posisi Sosmed & Info Kerjasama
+                        </span>
+                        {(activeStyle.socialMediaXOffset !== 0 ||
+                          activeStyle.socialMediaYOffset !== 0 ||
+                          activeStyle.promoXOffset !== 0 ||
+                          activeStyle.promoYOffset !== 0) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateStyle({
+                                socialMediaXOffset: 0,
+                                socialMediaYOffset: 0,
+                                promoXOffset: 0,
+                                promoYOffset: 0,
+                              })
+                            }
+                            className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
+                          >
+                            Reset Posisi
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Sosmed (Kiri / Kanan)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.socialMediaXOffset > 0 ? `+${activeStyle.socialMediaXOffset}` : activeStyle.socialMediaXOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-200"
+                            max="600"
+                            step="5"
+                            value={activeStyle.socialMediaXOffset}
+                            onChange={(e) => updateStyle({ socialMediaXOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Sosmed (Atas / Bawah)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.socialMediaYOffset > 0 ? `+${activeStyle.socialMediaYOffset}` : activeStyle.socialMediaYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-400"
+                            max="120"
+                            step="5"
+                            value={activeStyle.socialMediaYOffset}
+                            onChange={(e) => updateStyle({ socialMediaYOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Info Kerjasama (Kiri / Kanan)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.promoXOffset > 0 ? `+${activeStyle.promoXOffset}` : activeStyle.promoXOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-500"
+                            max="600"
+                            step="5"
+                            value={activeStyle.promoXOffset}
+                            onChange={(e) => updateStyle({ promoXOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Info Kerjasama (Atas / Bawah)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.promoYOffset > 0 ? `+${activeStyle.promoYOffset}` : activeStyle.promoYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-450"
+                            max="150"
+                            step="5"
+                            value={activeStyle.promoYOffset}
+                            onChange={(e) => updateStyle({ promoYOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Warna Font & Teks */}
                     <div className="space-y-2 pt-2 border-t border-slate-100">
                       <div className="flex items-center justify-between">
@@ -2362,6 +2479,108 @@ export default function GeneratorPage() {
                             step="5"
                             value={activeStyle.eventInfoXSpacing}
                             onChange={(e) => updateStyle({ eventInfoXSpacing: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* D. Posisi Sosial Media & Info Promosi Kerjasama */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">Posisi Sosmed & Info Kerjasama</span>
+                        {(activeStyle.socialMediaXOffset !== 0 ||
+                          activeStyle.socialMediaYOffset !== 0 ||
+                          activeStyle.promoXOffset !== 0 ||
+                          activeStyle.promoYOffset !== 0) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateStyle({
+                                socialMediaXOffset: 0,
+                                socialMediaYOffset: 0,
+                                promoXOffset: 0,
+                                promoYOffset: 0,
+                              })
+                            }
+                            className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
+                          >
+                            Reset Sosmed & Info
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Sosmed (Kiri / Kanan)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.socialMediaXOffset > 0 ? `+${activeStyle.socialMediaXOffset}` : activeStyle.socialMediaXOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-200"
+                            max="600"
+                            step="5"
+                            value={activeStyle.socialMediaXOffset}
+                            onChange={(e) => updateStyle({ socialMediaXOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Sosmed (Atas / Bawah)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.socialMediaYOffset > 0 ? `+${activeStyle.socialMediaYOffset}` : activeStyle.socialMediaYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-400"
+                            max="120"
+                            step="5"
+                            value={activeStyle.socialMediaYOffset}
+                            onChange={(e) => updateStyle({ socialMediaYOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Info Kerjasama (Kiri / Kanan)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.promoXOffset > 0 ? `+${activeStyle.promoXOffset}` : activeStyle.promoXOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-500"
+                            max="600"
+                            step="5"
+                            value={activeStyle.promoXOffset}
+                            onChange={(e) => updateStyle({ promoXOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Info Kerjasama (Atas / Bawah)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.promoYOffset > 0 ? `+${activeStyle.promoYOffset}` : activeStyle.promoYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-450"
+                            max="150"
+                            step="5"
+                            value={activeStyle.promoYOffset}
+                            onChange={(e) => updateStyle({ promoYOffset: Number(e.target.value) })}
                             className="w-full accent-orange-500 cursor-pointer"
                           />
                         </div>

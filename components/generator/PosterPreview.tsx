@@ -61,6 +61,10 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     speakerRowSpacingOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
+    socialMediaXOffset = 0,
+    socialMediaYOffset = 0,
+    promoXOffset = 0,
+    promoYOffset = 0,
     phoneNumber = '0811 6881 2123',
   } = data;
 
@@ -433,7 +437,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         )}
 
         {/* 9. Info Promosi Bubble (Positioned directly above Footer Medsos Image) */}
-        <g transform="translate(60, 1176)">
+        <g transform={`translate(${60 + promoXOffset}, ${1176 + promoYOffset})`}>
           <circle cx="24" cy="24" r="24" fill="#22c55e" />
           <path transform="translate(12, 12) scale(1)" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           <text
@@ -462,8 +466,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         {showSocialMediaLogo !== false && (
           <image
             href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
-            x={50}
-            y={1246}
+            x={50 + socialMediaXOffset}
+            y={1246 + socialMediaYOffset}
             width={432}
             height={36}
             preserveAspectRatio="xMinYMid meet"
