@@ -2,3 +2,4 @@
 ALTER TABLE branding_settings
   ADD COLUMN IF NOT EXISTS social_media_logo_url TEXT,
   ADD COLUMN IF NOT EXISTS social_media_logo_path TEXT;
+

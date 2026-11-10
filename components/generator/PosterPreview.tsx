@@ -398,20 +398,20 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           </text>
         )}
 
-        {/* 9. Footer Medsos Image (Untouched image placed directly at bottom-left corner) */}
+        {/* 9. Footer Medsos Image (Untouched image placed directly at bottom-left corner, scaled -20%) */}
         {showSocialMediaLogo !== false && (
           <image
             href={socialMediaLogoUrl || RRI_SOCIAL_MEDIA_IMAGE_BASE64}
             x={50}
-            y={1240}
-            width={540}
-            height={45}
+            y={1246}
+            width={432}
+            height={36}
             preserveAspectRatio="xMinYMid meet"
           />
         )}
 
         {/* 10. Info Promosi Bubble */}
-        <g transform="translate(610, 1240)">
+        <g transform="translate(515, 1240)">
           <circle cx="24" cy="24" r="24" fill="#22c55e" />
           <path transform="translate(12, 12) scale(1)" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
           <text
