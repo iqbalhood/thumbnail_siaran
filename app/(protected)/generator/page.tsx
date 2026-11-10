@@ -9,7 +9,6 @@ import { PosterPreview } from '@/components/generator/PosterPreview';
 import { SpeakerSelect } from '@/components/generator/SpeakerSelect';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Modal } from '@/components/ui/Modal';
 import { 
   Loader2, 
   Download, 
@@ -31,17 +30,46 @@ import {
   ArrowLeftRight,
   RotateCcw,
   Save,
-  Lock,
   Check,
   ShieldCheck,
-  KeyRound,
   Move,
   Sun,
-  Moon
+  Moon,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Layers,
+  Columns2,
+  Rows2
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
 import { uploadFile } from '@/lib/storage/upload';
+
+export interface FormatStyleConfig {
+  showRriLogo: boolean;
+  showProgramLogo: boolean;
+  showSocialMediaLogo: boolean;
+  showHutRiLogo: boolean;
+  showEventName: boolean;
+  rriLogoPosition: 'left' | 'right';
+  programLogoPosition: 'left' | 'right';
+  rriLogoTheme: 'white' | 'dark';
+  programLogoTheme: 'white' | 'dark';
+  hutRiLogoTheme: 'white' | 'dark';
+  rriLogoScale: number;
+  programLogoScale: number;
+  titleColor: string;
+  infoColor: string;
+  speakerColor: string;
+  promoColor: string;
+  titleXOffset: number;
+  titleYOffset: number;
+  speakerSpacingOffset: number;
+  speakerYOffset: number;
+  eventInfoYOffset: number;
+  eventInfoXSpacing: number;
+}
 
 // Helper to format Date string (YYYY-MM-DD) to Indonesian format (HARI, DD BULAN YYYY)
 const formatIndonesianDate = (dateString: string): string => {
@@ -139,6 +167,62 @@ const checkIsUserAdmin = (user: any): boolean => {
   );
 };
 
+const createDefaultFormatStyle = (): FormatStyleConfig => {
+  const isAug = new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS');
+  return {
+    showRriLogo: true,
+    showProgramLogo: true,
+    showSocialMediaLogo: true,
+    showHutRiLogo: isAug,
+    showEventName: true,
+    rriLogoPosition: 'left',
+    programLogoPosition: 'right',
+    rriLogoTheme: 'white',
+    programLogoTheme: 'white',
+    hutRiLogoTheme: 'white',
+    rriLogoScale: 100,
+    programLogoScale: 100,
+    titleColor: '#FFFFFF',
+    infoColor: '#FFFFFF',
+    speakerColor: '#FFFFFF',
+    promoColor: '#FFFFFF',
+    titleXOffset: 0,
+    titleYOffset: 0,
+    speakerSpacingOffset: 0,
+    speakerYOffset: 0,
+    eventInfoYOffset: 0,
+    eventInfoXSpacing: 0,
+  };
+};
+
+const extractFormatStyleFromObject = (raw: any, fallback: FormatStyleConfig): FormatStyleConfig => {
+  if (!raw || typeof raw !== 'object') return { ...fallback };
+  return {
+    showRriLogo: raw.showRriLogo !== undefined ? raw.showRriLogo : fallback.showRriLogo,
+    showProgramLogo: raw.showProgramLogo !== undefined ? raw.showProgramLogo : fallback.showProgramLogo,
+    showSocialMediaLogo: raw.showSocialMediaLogo !== undefined ? raw.showSocialMediaLogo : fallback.showSocialMediaLogo,
+    showHutRiLogo: raw.showHutRiLogo !== undefined ? raw.showHutRiLogo : fallback.showHutRiLogo,
+    showEventName: raw.showEventName !== undefined ? raw.showEventName : fallback.showEventName,
+    rriLogoPosition: raw.rriLogoPosition || fallback.rriLogoPosition,
+    programLogoPosition: raw.programLogoPosition || fallback.programLogoPosition,
+    rriLogoTheme: raw.rriLogoTheme || fallback.rriLogoTheme,
+    programLogoTheme: raw.programLogoTheme || fallback.programLogoTheme,
+    hutRiLogoTheme: raw.hutRiLogoTheme || fallback.hutRiLogoTheme,
+    rriLogoScale: raw.rriLogoScale !== undefined ? Number(raw.rriLogoScale) : fallback.rriLogoScale,
+    programLogoScale: raw.programLogoScale !== undefined ? Number(raw.programLogoScale) : fallback.programLogoScale,
+    titleColor: raw.titleColor || fallback.titleColor,
+    infoColor: raw.infoColor || fallback.infoColor,
+    speakerColor: raw.speakerColor || fallback.speakerColor,
+    promoColor: raw.promoColor || fallback.promoColor,
+    titleXOffset: raw.titleXOffset !== undefined ? Number(raw.titleXOffset) : fallback.titleXOffset,
+    titleYOffset: raw.titleYOffset !== undefined ? Number(raw.titleYOffset) : fallback.titleYOffset,
+    speakerSpacingOffset: raw.speakerSpacingOffset !== undefined ? Number(raw.speakerSpacingOffset) : fallback.speakerSpacingOffset,
+    speakerYOffset: raw.speakerYOffset !== undefined ? Number(raw.speakerYOffset) : fallback.speakerYOffset,
+    eventInfoYOffset: raw.eventInfoYOffset !== undefined ? Number(raw.eventInfoYOffset) : fallback.eventInfoYOffset,
+    eventInfoXSpacing: raw.eventInfoXSpacing !== undefined ? Number(raw.eventInfoXSpacing) : fallback.eventInfoXSpacing,
+  };
+};
+
 export default function GeneratorPage() {
   const [dialogs, setDialogs] = useState<any[]>([]);
   const [allPresenters, setAllPresenters] = useState<any[]>([]);
@@ -147,7 +231,18 @@ export default function GeneratorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Form State
+  // Navigation & View UI State
+  const [activeEditorTab, setActiveEditorTab] = useState<'all' | 'konten' | 'media' | 'logo_warna' | 'posisi'>('all');
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    konten: true,
+    media: true,
+    logo_warna: true,
+    posisi: true,
+  });
+  const [editTarget, setEditTarget] = useState<'both' | 'youtube' | 'poster'>('both');
+  const [previewLayout, setPreviewLayout] = useState<'side_by_side' | 'stacked'>('side_by_side');
+
+  // Shared Broadcast Content State
   const [title, setTitle] = useState('SEKOLAH RAKYAT DI ACEH:\nMENJAWAB TANTANGAN PENDIDIKAN PINGGIRAN');
   const [eventName, setEventName] = useState('BANDA ACEH MENYAPA');
   const [selectedDialogId, setSelectedDialogId] = useState<string>('');
@@ -164,42 +259,15 @@ export default function GeneratorPage() {
   const [selectedPresenterId, setSelectedPresenterId] = useState<string>('');
   const [speakerCount, setSpeakerCount] = useState<number>(1);
   const [selectedSpeakerIds, setSelectedSpeakerIds] = useState<(string | null)[]>([null, null, null, null, null]);
-  const [speakerSpacingOffset, setSpeakerSpacingOffset] = useState<number>(0);
-  const [speakerYOffset, setSpeakerYOffset] = useState<number>(0);
-  const [eventInfoYOffset, setEventInfoYOffset] = useState<number>(0);
-  const [eventInfoXSpacing, setEventInfoXSpacing] = useState<number>(0);
   const [selectedProgram, setSelectedProgram] = useState<'PRO 1' | 'PRO 2' | 'PRO 4'>('PRO 1');
-  const [designFormat, setDesignFormat] = useState<'youtube' | 'poster'>('youtube');
   const [customPortraitBg, setCustomPortraitBg] = useState<string | null>(null);
   const [isUploadingPortraitBg, setIsUploadingPortraitBg] = useState(false);
-
-  // Logo visibility & position controls
-  const [showRriLogo, setShowRriLogo] = useState(true);
-  const [showProgramLogo, setShowProgramLogo] = useState(true);
-  const [showSocialMediaLogo, setShowSocialMediaLogo] = useState(true);
   const [customSocialMediaLogo, setCustomSocialMediaLogo] = useState<string | null>(null);
   const [isUploadingSocialMedia, setIsUploadingSocialMedia] = useState(false);
-  const [showHutRiLogo, setShowHutRiLogo] = useState<boolean>(() => 
-    new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS')
-  );
-  const [showEventName, setShowEventName] = useState(true);
-  const [rriLogoPosition, setRriLogoPosition] = useState<'left' | 'right'>('left');
-  const [programLogoPosition, setProgramLogoPosition] = useState<'left' | 'right'>('right');
 
-  // Logo Theme (White vs Dark)
-  const [rriLogoTheme, setRriLogoTheme] = useState<'white' | 'dark'>('white');
-  const [programLogoTheme, setProgramLogoTheme] = useState<'white' | 'dark'>('white');
-  const [hutRiLogoTheme, setHutRiLogoTheme] = useState<'white' | 'dark'>('white');
-
-  // Text color customization
-  const [titleColor, setTitleColor] = useState('#FFFFFF');
-  const [infoColor, setInfoColor] = useState('#FFFFFF');
-  const [speakerColor, setSpeakerColor] = useState('#FFFFFF');
-  const [promoColor, setPromoColor] = useState('#FFFFFF');
-
-  // Title Position Offsets (Horizontal & Vertikal)
-  const [titleXOffset, setTitleXOffset] = useState<number>(0);
-  const [titleYOffset, setTitleYOffset] = useState<number>(0);
+  // Separate Visual & Layout States for 16:9 (YouTube) and 4:5 (Poster)
+  const [youtubeConfig, setYoutubeConfig] = useState<FormatStyleConfig>(() => createDefaultFormatStyle());
+  const [posterConfig, setPosterConfig] = useState<FormatStyleConfig>(() => createDefaultFormatStyle());
 
   // Admin & Thumbnail Settings states
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -213,6 +281,22 @@ export default function GeneratorPage() {
   const presenters = allPresenters.filter((p) => 
     selectedDialogId ? p.dialog_id === selectedDialogId : true
   );
+
+  // Active style config displayed in the left panel controls based on editTarget
+  const activeStyle: FormatStyleConfig = editTarget === 'poster' ? posterConfig : youtubeConfig;
+
+  const updateStyle = (patch: Partial<FormatStyleConfig>) => {
+    if (editTarget === 'both' || editTarget === 'youtube') {
+      setYoutubeConfig((prev) => ({ ...prev, ...patch }));
+    }
+    if (editTarget === 'both' || editTarget === 'poster') {
+      setPosterConfig((prev) => ({ ...prev, ...patch }));
+    }
+  };
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Synchronize time picker when manually typing in time text field
   useEffect(() => {
@@ -237,35 +321,6 @@ export default function GeneratorPage() {
       return 'PRO 4';
     }
     return 'PRO 1';
-  };
-
-  // System defaults for a given dialog (used when dialog has no saved custom preset)
-  const getDefaultDialogConfig = (dialogName: string) => {
-    const isAug = new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS');
-    return {
-      designFormat: 'youtube' as 'youtube' | 'poster',
-      selectedProgram: inferProgramFromDialogName(dialogName),
-      showRriLogo: true,
-      showProgramLogo: true,
-      showSocialMediaLogo: true,
-      showHutRiLogo: isAug,
-      showEventName: true,
-      rriLogoPosition: 'left' as 'left' | 'right',
-      programLogoPosition: 'right' as 'left' | 'right',
-      rriLogoTheme: 'white' as 'white' | 'dark',
-      programLogoTheme: 'white' as 'white' | 'dark',
-      hutRiLogoTheme: 'white' as 'white' | 'dark',
-      titleColor: '#FFFFFF',
-      infoColor: '#FFFFFF',
-      speakerColor: '#FFFFFF',
-      promoColor: '#FFFFFF',
-      titleXOffset: 0,
-      titleYOffset: 0,
-      speakerSpacingOffset: 0,
-      speakerYOffset: 0,
-      eventInfoYOffset: 0,
-      eventInfoXSpacing: 0,
-    };
   };
 
   // Resolve saved preset ONLY for the specified dialog (never falls back to global/other dialog)
@@ -294,52 +349,60 @@ export default function GeneratorPage() {
     return dialogsMap[dialogId] || dialogsMap[dialogName] || null;
   };
 
-  // Apply saved preset or clean system defaults for a specific Dialog / Acara
+  // Apply saved preset (both 16:9 and 4:5) or clean system defaults for a specific Dialog / Acara
   const applyDialogSettings = (
     dialogId: string,
     dialogName: string,
     customSettingsSource?: any,
     customDialogsList?: any[]
   ) => {
-    const defaults = getDefaultDialogConfig(dialogName);
+    const baseStyle = createDefaultFormatStyle();
+    const defaultProg = inferProgramFromDialogName(dialogName);
     const saved = resolveSavedDialogPreset(dialogId, dialogName, customSettingsSource, customDialogsList);
-    const merged = { ...defaults, ...(saved && typeof saved === 'object' ? saved : {}) };
 
-    setDesignFormat(merged.designFormat === 'poster' ? 'poster' : 'youtube');
-    setSelectedProgram(merged.selectedProgram || defaults.selectedProgram);
-    setShowRriLogo(merged.showRriLogo !== undefined ? merged.showRriLogo : true);
-    setShowProgramLogo(merged.showProgramLogo !== undefined ? merged.showProgramLogo : true);
-    setShowSocialMediaLogo(merged.showSocialMediaLogo !== undefined ? merged.showSocialMediaLogo : true);
-    setShowHutRiLogo(merged.showHutRiLogo !== undefined ? merged.showHutRiLogo : defaults.showHutRiLogo);
-    setShowEventName(merged.showEventName !== undefined ? merged.showEventName : true);
-    setRriLogoPosition(merged.rriLogoPosition || 'left');
-    setProgramLogoPosition(merged.programLogoPosition || 'right');
-    setRriLogoTheme(merged.rriLogoTheme || 'white');
-    setProgramLogoTheme(merged.programLogoTheme || 'white');
-    setHutRiLogoTheme(merged.hutRiLogoTheme || 'white');
-    setTitleColor(merged.titleColor || '#FFFFFF');
-    setInfoColor(merged.infoColor || '#FFFFFF');
-    setSpeakerColor(merged.speakerColor || '#FFFFFF');
-    setPromoColor(merged.promoColor || '#FFFFFF');
-    setTitleXOffset(merged.titleXOffset !== undefined ? merged.titleXOffset : 0);
-    setTitleYOffset(merged.titleYOffset !== undefined ? merged.titleYOffset : 0);
-    setSpeakerSpacingOffset(merged.speakerSpacingOffset !== undefined ? merged.speakerSpacingOffset : 0);
-    setSpeakerYOffset(merged.speakerYOffset !== undefined ? merged.speakerYOffset : 0);
-    setEventInfoYOffset(merged.eventInfoYOffset !== undefined ? merged.eventInfoYOffset : 0);
-    setEventInfoXSpacing(merged.eventInfoXSpacing !== undefined ? merged.eventInfoXSpacing : 0);
+    if (!saved || typeof saved !== 'object') {
+      setSelectedProgram(defaultProg);
+      setYoutubeConfig({ ...baseStyle });
+      setPosterConfig({ ...baseStyle });
+      setCustomPortraitBg(null);
+      return;
+    }
 
-    if (saved?.startTime && saved?.endTime) {
+    setSelectedProgram(saved.selectedProgram || defaultProg);
+
+    // Extract top-level legacy settings as fallback for both 16:9 and 4:5
+    const topLevelStyle = extractFormatStyleFromObject(saved, baseStyle);
+    const resolvedYoutube = extractFormatStyleFromObject(saved.youtube, topLevelStyle);
+    const resolvedPoster = extractFormatStyleFromObject(saved.poster, topLevelStyle);
+
+    setYoutubeConfig(resolvedYoutube);
+    setPosterConfig(resolvedPoster);
+
+    if (saved.portraitBgUrl !== undefined) {
+      setCustomPortraitBg(saved.portraitBgUrl || null);
+    } else {
+      setCustomPortraitBg(null);
+    }
+
+    if (saved.startTime && saved.endTime) {
       setStartTime(saved.startTime);
       setEndTime(saved.endTime);
       setTime(`${saved.startTime} – ${saved.endTime} WIB`);
     }
   };
 
-  // When dialog changes, auto-select first presenter for that dialog
+  // When dialog changes, auto-select saved presenter or first presenter for that dialog
   useEffect(() => {
     if (!selectedDialogId) return;
     const dialogPresenters = allPresenters.filter((p) => p.dialog_id === selectedDialogId);
-    if (dialogPresenters.length > 0) {
+    const currentDialogObj = dialogs.find((d) => d.id === selectedDialogId);
+    const savedPreset = currentDialogObj
+      ? resolveSavedDialogPreset(currentDialogObj.id, currentDialogObj.name)
+      : null;
+
+    if (savedPreset?.selectedPresenterId && dialogPresenters.some((p) => p.id === savedPreset.selectedPresenterId)) {
+      setSelectedPresenterId(savedPreset.selectedPresenterId);
+    } else if (dialogPresenters.length > 0) {
       setSelectedPresenterId(dialogPresenters[0].id);
     } else {
       setSelectedPresenterId('');
@@ -403,7 +466,8 @@ export default function GeneratorPage() {
     }
   };
 
-  const handleSaveThumbnailSettings = async () => {
+  // Save settings for 16:9, 4:5, or both into the active dialog preset
+  const handleSaveThumbnailSettings = async (targetFormat: 'both' | 'youtube' | 'poster' = 'both') => {
     if (!isAdmin) {
       alert('Hanya akun Admin yang memiliki akses untuk menyimpan settingan thumbnail.');
       return;
@@ -419,32 +483,37 @@ export default function GeneratorPage() {
     try {
       const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
       const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
+      const existingSaved = resolveSavedDialogPreset(selectedDialogId, activeDialogName) || {};
+
+      const baseFallback = createDefaultFormatStyle();
+      const prevYoutube = extractFormatStyleFromObject(
+        existingSaved.youtube || existingSaved,
+        baseFallback
+      );
+      const prevPoster = extractFormatStyleFromObject(
+        existingSaved.poster || existingSaved,
+        baseFallback
+      );
+
+      const nextYoutube = targetFormat === 'poster' ? prevYoutube : youtubeConfig;
+      const nextPoster = targetFormat === 'youtube' ? prevPoster : posterConfig;
+      const nextPortraitBg =
+        targetFormat === 'youtube'
+          ? (existingSaved.portraitBgUrl ?? customPortraitBg ?? null)
+          : (customPortraitBg ?? null);
 
       const currentConfig = {
+        ...existingSaved,
+        // Top-level fields kept synced with 16:9 for backwards compatibility
+        ...nextYoutube,
         dialogId: selectedDialogId,
         dialogName: activeDialogName,
-        designFormat,
+        designFormat: targetFormat === 'poster' ? 'poster' : 'youtube',
         selectedProgram,
-        showRriLogo,
-        showProgramLogo,
-        showSocialMediaLogo,
-        showHutRiLogo,
-        showEventName,
-        rriLogoPosition,
-        programLogoPosition,
-        rriLogoTheme,
-        programLogoTheme,
-        hutRiLogoTheme,
-        titleColor,
-        infoColor,
-        speakerColor,
-        promoColor,
-        titleXOffset,
-        titleYOffset,
-        speakerSpacingOffset,
-        speakerYOffset,
-        eventInfoYOffset,
-        eventInfoXSpacing,
+        selectedPresenterId: selectedPresenterId || null,
+        portraitBgUrl: nextPortraitBg,
+        youtube: nextYoutube,
+        poster: nextPoster,
         startTime,
         endTime,
         updatedAt: new Date().toISOString(),
@@ -505,7 +574,14 @@ export default function GeneratorPage() {
         prev.map((d) => (d.id === selectedDialogId ? { ...d, thumbnail_settings: currentConfig } : d))
       );
 
-      setSaveSuccessMsg(`Settingan default khusus untuk "${activeDialogName}" berhasil disimpan!`);
+      const labelFormat =
+        targetFormat === 'youtube'
+          ? '16:9 (YouTube)'
+          : targetFormat === 'poster'
+          ? '4:5 (Poster)'
+          : '16:9 & 4:5';
+
+      setSaveSuccessMsg(`Settingan ${labelFormat} untuk "${activeDialogName}" berhasil disimpan!`);
       setTimeout(() => setSaveSuccessMsg(null), 4000);
     } catch (err: any) {
       alert(`Gagal menyimpan settingan: ${err.message || err}`);
@@ -518,7 +594,7 @@ export default function GeneratorPage() {
     if (!isAdmin || !selectedDialogId) return;
     const currentDialog = dialogs.find((d) => d.id === selectedDialogId);
     const activeDialogName = currentDialog?.name || eventName || 'Acara Ini';
-    if (!confirm(`Reset settingan default untuk "${activeDialogName}" ke setelan bawaan sistem?`)) return;
+    if (!confirm(`Reset settingan default (16:9 & 4:5) untuk "${activeDialogName}" ke setelan bawaan sistem?`)) return;
 
     setIsSavingSettings(true);
     try {
@@ -722,81 +798,64 @@ export default function GeneratorPage() {
     }
   };
 
-  // Resolve Logo URLs based on dark/white theme selection (with clean fallbacks)
-  const resolvedRriLogoUrl = rriLogoTheme === 'dark'
-    ? (getBrandingField('rri_logo_dark_url') || getBrandingField('rri_logo_url') || null)
-    : (getBrandingField('rri_logo_url') || getBrandingField('rri_logo_dark_url') || null);
+  // Helper to resolve logo URLs for a given FormatStyleConfig (16:9 or 4:5)
+  const buildFormatPreviewData = (styleCfg: FormatStyleConfig, bgUrl: string | null) => {
+    const rriUrl = styleCfg.rriLogoTheme === 'dark'
+      ? (getBrandingField('rri_logo_dark_url') || getBrandingField('rri_logo_url') || null)
+      : (getBrandingField('rri_logo_url') || getBrandingField('rri_logo_dark_url') || null);
 
-  const resolvedProgramLogoUrl = (() => {
-    if (selectedProgram === 'PRO 2') {
-      return programLogoTheme === 'dark'
-        ? (getBrandingField('pro2_logo_dark_url') || getBrandingField('pro2_logo_url') || null)
-        : (getBrandingField('pro2_logo_url') || getBrandingField('pro2_logo_dark_url') || null);
-    }
-    if (selectedProgram === 'PRO 4') {
-      return programLogoTheme === 'dark'
-        ? (getBrandingField('pro4_logo_dark_url') || getBrandingField('pro4_logo_url') || null)
-        : (getBrandingField('pro4_logo_url') || getBrandingField('pro4_logo_dark_url') || null);
-    }
-    return programLogoTheme === 'dark'
-      ? (getBrandingField('pro1_logo_dark_url') || getBrandingField('pro1_logo_url') || null)
-      : (getBrandingField('pro1_logo_url') || getBrandingField('pro1_logo_dark_url') || null);
-  })();
+    const progUrl = (() => {
+      if (selectedProgram === 'PRO 2') {
+        return styleCfg.programLogoTheme === 'dark'
+          ? (getBrandingField('pro2_logo_dark_url') || getBrandingField('pro2_logo_url') || null)
+          : (getBrandingField('pro2_logo_url') || getBrandingField('pro2_logo_dark_url') || null);
+      }
+      if (selectedProgram === 'PRO 4') {
+        return styleCfg.programLogoTheme === 'dark'
+          ? (getBrandingField('pro4_logo_dark_url') || getBrandingField('pro4_logo_url') || null)
+          : (getBrandingField('pro4_logo_url') || getBrandingField('pro4_logo_dark_url') || null);
+      }
+      return styleCfg.programLogoTheme === 'dark'
+        ? (getBrandingField('pro1_logo_dark_url') || getBrandingField('pro1_logo_url') || null)
+        : (getBrandingField('pro1_logo_url') || getBrandingField('pro1_logo_dark_url') || null);
+    })();
 
-  const resolvedHutRiLogoUrl = hutRiLogoTheme === 'dark'
-    ? (getBrandingField('hut_ri_logo_dark_url') || getBrandingField('hut_ri_logo_url') || null)
-    : (getBrandingField('hut_ri_logo_url') || getBrandingField('hut_ri_logo_dark_url') || null);
+    const hutUrl = styleCfg.hutRiLogoTheme === 'dark'
+      ? (getBrandingField('hut_ri_logo_dark_url') || getBrandingField('hut_ri_logo_url') || null)
+      : (getBrandingField('hut_ri_logo_url') || getBrandingField('hut_ri_logo_dark_url') || null);
 
-  const resolvedSocialMediaLogoUrl =
-    customSocialMediaLogo || getBrandingField('social_media_logo_url') || null;
+    const socUrl = customSocialMediaLogo || getBrandingField('social_media_logo_url') || null;
 
-  const basePreviewData = {
-    title,
-    eventName,
-    date,
-    time,
-    speakers: resolvedSpeakers,
-    rriLogoUrl: resolvedRriLogoUrl,
-    programLogoUrl: resolvedProgramLogoUrl,
-    hutRiLogoUrl: resolvedHutRiLogoUrl,
-    socialMediaLogoUrl: resolvedSocialMediaLogoUrl,
-    showRriLogo,
-    showProgramLogo,
-    showSocialMediaLogo,
-    showHutRiLogo,
-    showEventName,
-    rriLogoPosition,
-    programLogoPosition,
-    rriLogoTheme,
-    programLogoTheme,
-    hutRiLogoTheme,
-    titleColor,
-    infoColor,
-    speakerColor,
-    promoColor,
-    titleXOffset,
-    titleYOffset,
-    speakerSpacingOffset,
-    speakerYOffset,
-    eventInfoYOffset,
-    eventInfoXSpacing,
-    phoneNumber: branding?.phone_number || '0811 6881 2123',
+    return {
+      title,
+      eventName,
+      date,
+      time,
+      speakers: resolvedSpeakers,
+      presenterBgUrl: bgUrl,
+      rriLogoUrl: rriUrl,
+      programLogoUrl: progUrl,
+      hutRiLogoUrl: hutUrl,
+      socialMediaLogoUrl: socUrl,
+      ...styleCfg,
+      phoneNumber: branding?.phone_number || '0811 6881 2123',
+    };
   };
 
-  const youtubePreviewData = {
-    ...basePreviewData,
-    presenterBgUrl: selectedPresenter?.background_url || null,
-  };
+  const youtubePreviewData = buildFormatPreviewData(
+    youtubeConfig,
+    selectedPresenter?.background_url || null
+  );
 
-  const posterPreviewData = {
-    ...basePreviewData,
-    presenterBgUrl: portraitBgUrl,
-  };
+  const posterPreviewData = buildFormatPreviewData(
+    posterConfig,
+    portraitBgUrl
+  );
 
-  const handleDownload = async () => {
+  const handleDownloadSingle = async (format: 'youtube' | 'poster') => {
     setIsExporting(true);
     try {
-      const isPoster = designFormat === 'poster';
+      const isPoster = format === 'poster';
       const prefix = isPoster ? 'poster' : 'thumbnail';
       const resSuffix = isPoster ? '1080x1350' : '1280x720';
       const svgId = isPoster ? 'poster-svg' : 'thumbnail-svg';
@@ -818,7 +877,6 @@ export default function GeneratorPage() {
       const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 30);
       const timestamp = Date.now();
       await exportToPng('thumbnail-svg', `thumbnail-${cleanTitle}-1280x720-${timestamp}`, 1280, 720);
-      // Brief delay so browser triggers separate downloads reliably
       await new Promise((r) => setTimeout(r, 450));
       await exportToPng('poster-svg', `poster-${cleanTitle}-1080x1350-${timestamp}`, 1080, 1350);
     } catch (error: any) {
@@ -834,6 +892,70 @@ export default function GeneratorPage() {
     setSelectedSpeakerIds(newIds);
   };
 
+  // Reusable Target Switcher bar for visual & layout sections
+  const renderFormatTargetBar = () => (
+    <div className="p-2.5 bg-slate-900 text-white rounded-xl flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-1.5">
+        <Layers size={13} className="text-orange-400 shrink-0" />
+        <span className="text-[11px] font-bold text-slate-200">Target Edit:</span>
+      </div>
+      <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setEditTarget('both')}
+          className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
+            editTarget === 'both'
+              ? 'bg-orange-500 text-white shadow-xs'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          🔗 Keduanya (16:9 & 4:5)
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditTarget('youtube')}
+          className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
+            editTarget === 'youtube'
+              ? 'bg-orange-500 text-white shadow-xs'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <Tv size={10} />
+          16:9
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditTarget('poster')}
+          className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
+            editTarget === 'poster'
+              ? 'bg-orange-500 text-white shadow-xs'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <Smartphone size={10} />
+          4:5
+        </button>
+      </div>
+      {editTarget !== 'both' && (
+        <button
+          type="button"
+          onClick={() => {
+            if (editTarget === 'youtube') {
+              setPosterConfig({ ...youtubeConfig });
+            } else {
+              setYoutubeConfig({ ...posterConfig });
+            }
+          }}
+          className="text-[10px] font-bold text-orange-300 hover:text-orange-200 flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800 border border-slate-700"
+          title={editTarget === 'youtube' ? 'Salin settingan 16:9 ini ke 4:5' : 'Salin settingan 4:5 ini ke 16:9'}
+        >
+          <Copy size={10} />
+          {editTarget === 'youtube' ? ' Terapkan ke 4:5' : ' Terapkan ke 16:9'}
+        </button>
+      )}
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] gap-4">
@@ -845,1224 +967,1299 @@ export default function GeneratorPage() {
     );
   }
 
+  const showKonten = activeEditorTab === 'all' || activeEditorTab === 'konten';
+  const showMedia = activeEditorTab === 'all' || activeEditorTab === 'media';
+  const showLogoWarna = activeEditorTab === 'all' || activeEditorTab === 'logo_warna';
+  const showPosisi = activeEditorTab === 'all' || activeEditorTab === 'posisi';
+
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10">
-      <div className="grid lg:grid-cols-12 gap-10">
+    <main className="mx-auto max-w-[1440px] px-4 sm:px-6 py-6">
+      <div className="grid lg:grid-cols-12 gap-6 items-start">
         
-        {/* Left: Configuration Form */}
-        <div className="lg:col-span-5 space-y-8">
-          <header className="space-y-1">
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles size={24} className="text-orange-500" />
-              Thumbnail & Poster Generator
-            </h1>
-            <p className="text-sm text-slate-500 italic">Buat thumbnail YouTube (16:9) atau poster siaran (4:5) secara instan.</p>
-          </header>
+        {/* LEFT PANEL: Ergonomic & Structured Editor */}
+        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col lg:max-h-[calc(100vh-5.5rem)] lg:sticky lg:top-20">
+          
+          {/* Sticky Top Header + Quick Category Tabs */}
+          <div className="p-4 sm:p-5 bg-white border-b border-slate-100 space-y-3 shrink-0 z-20">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles size={19} className="text-orange-500 shrink-0" />
+                  Panel Editor Thumbnail & Poster
+                </h1>
+                <p className="text-xs text-slate-500">
+                  Acara aktif: <strong className="text-orange-600">{activeDialogName}</strong> ({selectedProgram})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchInitialData}
+                className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                title="Muat ulang data dari server"
+              >
+                <RefreshCw size={15} />
+              </button>
+            </div>
 
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-8 space-y-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
+            {/* Category Navigation Tabs */}
+            <div className="grid grid-cols-5 gap-1 bg-slate-100 p-1 rounded-xl">
+              {[
+                { id: 'all', label: 'Semua' },
+                { id: 'konten', label: '1. Konten' },
+                { id: 'media', label: '2. Foto/BG' },
+                { id: 'logo_warna', label: '3. Logo/Warna' },
+                { id: 'posisi', label: '4. Posisi' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveEditorTab(tab.id as any)}
+                  className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all text-center truncate ${
+                    activeEditorTab === tab.id
+                      ? 'bg-white text-orange-600 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Scrollable Form Body */}
+          <div className="p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1">
             
-            {/* Format Desain Switcher */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                <Layout size={12} className="text-slate-400" />
-                Pilih Format Desain
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+            {/* SECTION 1: ACARA, JUDUL & JADWAL */}
+            {showKonten && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
                 <button
                   type="button"
-                  onClick={() => setDesignFormat('youtube')}
-                  className={`p-3 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${
-                    designFormat === 'youtube'
-                      ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
-                      : 'border-slate-100 bg-slate-50/60 hover:border-slate-200 hover:bg-white'
-                  }`}
+                  onClick={() => toggleSection('konten')}
+                  className="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/70 flex items-center justify-between text-left transition-colors border-b border-slate-100"
                 >
-                  <div className="flex items-center gap-1.5">
-                    <Tv size={15} className={designFormat === 'youtube' ? 'text-orange-500' : 'text-slate-400'} />
-                    <span className={`text-xs font-bold uppercase tracking-wider ${designFormat === 'youtube' ? 'text-orange-700' : 'text-slate-700'}`}>
-                      YouTube
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
+                      1
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      Acara, Judul & Jadwal Siaran
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-slate-400">1280 × 720 (16:9)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDesignFormat('poster')}
-                  className={`p-3 rounded-2xl border-2 transition-all text-left flex flex-col gap-1 ${
-                    designFormat === 'poster'
-                      ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
-                      : 'border-slate-100 bg-slate-50/60 hover:border-slate-200 hover:bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Smartphone size={15} className={designFormat === 'poster' ? 'text-orange-500' : 'text-slate-400'} />
-                    <span className={`text-xs font-bold uppercase tracking-wider ${designFormat === 'poster' ? 'text-orange-700' : 'text-slate-700'}`}>
-                      Poster Siaran
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-400">1080 × 1350 (4:5)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 1. Judul Dialog */}
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                <Type size={16} className="text-slate-400" />
-                Judul Dialog (Gunakan ENTER untuk baris baru)
-              </label>
-              <textarea
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Masukkan judul dialog..."
-                className="w-full min-h-[100px] p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium resize-none uppercase"
-              />
-
-              {/* Atur Posisi Judul (Horizontal & Vertikal) */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                    <Move size={13} className="text-orange-500" />
-                    Atur Posisi Judul
-                  </span>
-                  {(titleXOffset !== 0 || titleYOffset !== 0) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTitleXOffset(0);
-                        setTitleYOffset(0);
-                      }}
-                      className="text-[11px] font-bold text-orange-600 hover:text-orange-700 transition-colors"
-                    >
-                      Reset Posisi
-                    </button>
+                  {activeEditorTab === 'all' && (
+                    openSections.konten ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />
                   )}
-                </div>
+                </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Kiri / Kanan */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-600">
-                      <span>↔️ Kiri / Kanan</span>
-                      <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded-md border border-slate-200 text-[10px]">
-                        {titleXOffset > 0 ? `+${titleXOffset}` : titleXOffset} px
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="-200"
-                      max="400"
-                      step="5"
-                      value={titleXOffset}
-                      onChange={(e) => setTitleXOffset(Number(e.target.value))}
-                      className="w-full accent-orange-500 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Atas / Bawah */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-600">
-                      <span>↕️ Atas / Bawah</span>
-                      <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded-md border border-slate-200 text-[10px]">
-                        {titleYOffset > 0 ? `+${titleYOffset}` : titleYOffset} px
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="-120"
-                      max="200"
-                      step="5"
-                      value={titleYOffset}
-                      onChange={(e) => setTitleYOffset(Number(e.target.value))}
-                      className="w-full accent-orange-500 cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Dialog, Tanggal, Jam */}
-            <div className="space-y-4">
-              {/* Pilih Dialog */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                    <Mic2 size={12} className="text-slate-400" />
-                    Nama Acara / Dialog
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowEventName(!showEventName)}
-                    className={`px-2 py-0.5 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                      showEventName 
-                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
-                        : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-                    }`}
-                    title={showEventName ? 'Sembunyikan Nama Acara di thumbnail' : 'Tampilkan Nama Acara di thumbnail'}
-                  >
-                    {showEventName ? <Eye size={12} /> : <EyeOff size={12} />}
-                    {showEventName ? 'Tampil' : 'Sembunyi'}
-                  </button>
-                </div>
-                {dialogs.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {dialogs.map((d) => {
-                      const isSelected = selectedDialogId === d.id;
-                      const savedPreset = resolveSavedDialogPreset(d.id, d.name);
-                      const hasCustomPreset = Boolean(savedPreset);
-                      return (
+                {(activeEditorTab !== 'all' || openSections.konten) && (
+                  <div className="p-4 space-y-4">
+                    {/* Pilih Acara / Dialog */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <Mic2 size={12} className="text-orange-500" />
+                          Pilih Acara / Dialog
+                        </label>
                         <button
-                          key={d.id}
                           type="button"
-                          onClick={() => {
-                            setSelectedDialogId(d.id);
-                            setEventName(d.name);
-                            applyDialogSettings(d.id, d.name);
-                          }}
-                          className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 text-center flex flex-col items-center justify-center gap-1 ${
-                            isSelected
-                              ? 'border-orange-500 bg-orange-50 text-orange-700 ring-4 ring-orange-500/10 shadow-xs'
-                              : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
+                          onClick={() => updateStyle({ showEventName: !activeStyle.showEventName })}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                            activeStyle.showEventName 
+                              ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                              : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
                           }`}
+                          title="Tampilkan/sembunyikan nama acara di thumbnail & poster"
                         >
-                          <span>{d.name}</span>
-                          {hasCustomPreset && (
-                            <span className={`text-[9px] font-semibold tracking-normal normal-case flex items-center gap-0.5 ${
-                              isSelected ? 'text-orange-600' : 'text-emerald-600'
-                            }`}>
-                              <Sparkles size={9} /> {savedPreset?.selectedProgram || 'Custom'} · Preset Aktif
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <Input value={eventName} onChange={(e) => setEventName(e.target.value)} className="bg-slate-50 rounded-xl" placeholder="Nama acara..." />
-                )}
-              </div>
-
-              {/* Tanggal */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                  <Calendar size={12} className="text-slate-400" />
-                  Tanggal
-                </label>
-                <div className="relative flex items-center">
-                  <Input
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="bg-slate-50 rounded-xl pr-12 uppercase font-medium"
-                    placeholder="SELASA, 29 JULI 2025"
-                  />
-                  {/* Hidden native date input — triggered programmatically via ref */}
-                  <input
-                    ref={dateInputRef}
-                    type="date"
-                    value={parseIndonesianDate(date)}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setDate(formatIndonesianDate(e.target.value));
-                      }
-                    }}
-                    className="sr-only"
-                    style={{ colorScheme: 'light' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => dateInputRef.current?.showPicker()}
-                    className="absolute right-3 flex items-center justify-center p-1 rounded-lg hover:bg-orange-50 transition-colors group"
-                    title="Pilih tanggal"
-                  >
-                    <Calendar size={18} className="text-slate-400 group-hover:text-orange-500 transition-colors" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Jam */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                  <Clock size={12} className="text-slate-400" />
-                  Jam Siaran
-                </label>
-                {/* Time Range Picker */}
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl">
-                  <Clock size={16} className="text-slate-400 shrink-0" />
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setStartTime(val);
-                      setTime(`${val} – ${endTime} WIB`);
-                    }}
-                    className="bg-transparent text-slate-700 font-bold text-sm focus:outline-none cursor-pointer"
-                    style={{ colorScheme: 'light' }}
-                  />
-                  <span className="text-slate-400 font-medium text-sm">–</span>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEndTime(val);
-                      setTime(`${startTime} – ${val} WIB`);
-                    }}
-                    className="bg-transparent text-slate-700 font-bold text-sm focus:outline-none cursor-pointer"
-                    style={{ colorScheme: 'light' }}
-                  />
-                  <span className="text-slate-500 font-bold text-sm bg-slate-200 px-2 py-0.5 rounded-md ml-auto">WIB</span>
-                </div>
-                {/* Preview text */}
-                <p className="text-xs text-slate-400 ml-1">Preview: <span className="font-semibold text-slate-600">{time}</span></p>
-              </div>
-
-              {/* Pilih Programa */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                  <Mic2 size={12} className="text-slate-400" />
-                  Pilih Programa
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['PRO 1', 'PRO 2', 'PRO 4'] as const).map((prog) => (
-                    <button
-                      key={prog}
-                      onClick={() => setSelectedProgram(prog)}
-                      className={`px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 ${
-                        selectedProgram === prog
-                          ? 'border-orange-500 bg-orange-50 text-orange-700 ring-4 ring-orange-500/10'
-                          : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
-                      }`}
-                    >
-                      {prog}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pengaturan Logo RRI & Programa & HUT RI */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-slate-400" />
-                    Posisi & Varian Logo
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRriLogoTheme('white');
-                        setProgramLogoTheme('white');
-                        setHutRiLogoTheme('white');
-                      }}
-                      className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 border border-slate-200"
-                      title="Setel semua logo ke varian Putih (White)"
-                    >
-                      <Sun size={11} className="text-amber-500" />
-                      Semua Putih
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRriLogoTheme('dark');
-                        setProgramLogoTheme('dark');
-                        setHutRiLogoTheme('dark');
-                      }}
-                      className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 border border-slate-200"
-                      title="Setel semua logo ke varian Gelap (Dark)"
-                    >
-                      <Moon size={11} className="text-indigo-500" />
-                      Semua Dark
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRriLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
-                        setProgramLogoPosition((prev) => (prev === 'left' ? 'right' : 'left'));
-                      }}
-                      className="text-[11px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-orange-50 border border-orange-200/60"
-                      title="Tukar posisi Logo RRI dan Logo Programa"
-                    >
-                      <ArrowLeftRight size={12} />
-                      Tukar
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                  {/* Logo RRI */}
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700">Logo RRI</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowRriLogo(!showRriLogo)}
-                        className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                          showRriLogo 
-                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
-                            : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-                        }`}
-                      >
-                        {showRriLogo ? <Eye size={12} /> : <EyeOff size={12} />}
-                        {showRriLogo ? 'Tampil' : 'Sembunyi'}
-                      </button>
-                    </div>
-
-                    {showRriLogo && (
-                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                        {/* Posisi */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
-                          <button
-                            type="button"
-                            onClick={() => setRriLogoPosition('left')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                              rriLogoPosition === 'left'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            Kiri
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRriLogoPosition('right')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                              rriLogoPosition === 'right'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            Kanan
-                          </button>
-                        </div>
-
-                        {/* Varian Tema (Putih / Dark) */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
-                          <button
-                            type="button"
-                            onClick={() => setRriLogoTheme('white')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              rriLogoTheme === 'white'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            <Sun size={10} className="text-amber-500" />
-                            Putih
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRriLogoTheme('dark')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              rriLogoTheme === 'dark'
-                                ? 'bg-slate-900 text-white shadow-xs border border-slate-800'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            <Moon size={10} className="text-indigo-400" />
-                            Dark
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Logo Programa */}
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700">Logo {selectedProgram}</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowProgramLogo(!showProgramLogo)}
-                        className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                          showProgramLogo 
-                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
-                            : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-                        }`}
-                      >
-                        {showProgramLogo ? <Eye size={12} /> : <EyeOff size={12} />}
-                        {showProgramLogo ? 'Tampil' : 'Sembunyi'}
-                      </button>
-                    </div>
-
-                    {showProgramLogo && (
-                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                        {/* Posisi */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
-                          <button
-                            type="button"
-                            onClick={() => setProgramLogoPosition('left')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                              programLogoPosition === 'left'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            Kiri
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setProgramLogoPosition('right')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                              programLogoPosition === 'right'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            Kanan
-                          </button>
-                        </div>
-
-                        {/* Varian Tema (Putih / Dark) */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
-                          <button
-                            type="button"
-                            onClick={() => setProgramLogoTheme('white')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              programLogoTheme === 'white'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            <Sun size={10} className="text-amber-500" />
-                            Putih
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setProgramLogoTheme('dark')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              programLogoTheme === 'dark'
-                                ? 'bg-slate-900 text-white shadow-xs border border-slate-800'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            <Moon size={10} className="text-indigo-400" />
-                            Dark
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Logo Kemerdekaan / HUT RI */}
-                  <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700">Logo HUT RI</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowHutRiLogo(!showHutRiLogo)}
-                        className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                          showHutRiLogo 
-                            ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
-                            : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-                        }`}
-                      >
-                        {showHutRiLogo ? <Eye size={12} /> : <EyeOff size={12} />}
-                        {showHutRiLogo ? 'Tampil' : 'Sembunyi'}
-                      </button>
-                    </div>
-
-                    {showHutRiLogo && (
-                      <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                        {/* Varian Tema (Putih / Dark) */}
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
-                          <button
-                            type="button"
-                            onClick={() => setHutRiLogoTheme('white')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              hutRiLogoTheme === 'white'
-                                ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            <Sun size={10} className="text-amber-500" />
-                            Putih
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setHutRiLogoTheme('dark')}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
-                              hutRiLogoTheme === 'dark'
-                                ? 'bg-slate-900 text-white shadow-xs border border-slate-800'
-                                : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                          >
-                            <Moon size={10} className="text-indigo-400" />
-                            Dark
-                          </button>
-                        </div>
-                        <p className="text-[9px] text-slate-400 leading-tight">Posisi otomatis di sudut kanan atas</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Gambar Kontainer Sosial Media (Pojok Kiri Bawah) */}
-                <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">Gambar Sosial Media (Pojok Kiri Bawah)</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowSocialMediaLogo(!showSocialMediaLogo)}
-                      className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition-colors ${
-                        showSocialMediaLogo
-                          ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-                          : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-                      }`}
-                    >
-                      {showSocialMediaLogo ? <Eye size={12} /> : <EyeOff size={12} />}
-                      {showSocialMediaLogo ? 'Tampil' : 'Sembunyi'}
-                    </button>
-                  </div>
-
-                  {showSocialMediaLogo && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-200/60">
-                      <span className="text-[10px] text-slate-500">
-                        {resolvedSocialMediaLogoUrl ? 'Menggunakan gambar custom' : 'Menggunakan gambar bawaan'}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <label className="cursor-pointer px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold flex items-center gap-1 transition-colors">
-                          {isUploadingSocialMedia ? (
-                            <Loader2 size={11} className="animate-spin text-orange-400" />
-                          ) : (
-                            <Upload size={11} className="text-orange-400" />
-                          )}
-                          <span>Ganti Gambar</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleSocialMediaLogoUpload}
-                            className="hidden"
-                          />
-                        </label>
-                        {resolvedSocialMediaLogoUrl && (
-                          <button
-                            type="button"
-                            onClick={handleResetSocialMediaLogo}
-                            className="px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 text-[10px] font-bold transition-colors"
-                            title="Kembalikan ke gambar sosmed bawaan"
-                          >
-                            Reset
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Warna Font & Teks */}
-            <div className="space-y-3 bg-white border border-slate-200 p-4 rounded-2xl shadow-xs">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                  <Palette size={16} className="text-orange-500" />
-                  Warna Font & Teks
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTitleColor('#FFFFFF');
-                    setInfoColor('#FFFFFF');
-                    setSpeakerColor('#FFFFFF');
-                    setPromoColor('#FFFFFF');
-                  }}
-                  className="text-xs font-bold text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-slate-50"
-                  title="Kembalikan semua warna teks ke Putih"
-                >
-                  <RotateCcw size={12} />
-                  Reset Putih
-                </button>
-              </div>
-
-              <div className="space-y-2.5">
-                {/* 1. Judul Dialog */}
-                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: titleColor }} />
-                    <span className="text-xs font-semibold text-slate-700">Judul Dialog</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {COLOR_PRESETS.map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        onClick={() => setTitleColor(c.hex)}
-                        className={`w-5 h-5 rounded-full border transition-all ${
-                          titleColor.toUpperCase() === c.hex.toUpperCase()
-                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
-                            : 'border-slate-300 hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: c.hex }}
-                        title={c.name}
-                      />
-                    ))}
-                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
-                      <input
-                        type="color"
-                        value={titleColor}
-                        onChange={(e) => setTitleColor(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
-                        🎨
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* 2. Info Acara & Tanggal */}
-                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: infoColor }} />
-                    <span className="text-xs font-semibold text-slate-700">Info & Tanggal</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {COLOR_PRESETS.map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        onClick={() => setInfoColor(c.hex)}
-                        className={`w-5 h-5 rounded-full border transition-all ${
-                          infoColor.toUpperCase() === c.hex.toUpperCase()
-                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
-                            : 'border-slate-300 hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: c.hex }}
-                        title={c.name}
-                      />
-                    ))}
-                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
-                      <input
-                        type="color"
-                        value={infoColor}
-                        onChange={(e) => setInfoColor(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
-                        🎨
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* 3. Nama & Jabatan Pembicara */}
-                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: speakerColor }} />
-                    <span className="text-xs font-semibold text-slate-700">Nama Pembicara</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {COLOR_PRESETS.map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        onClick={() => setSpeakerColor(c.hex)}
-                        className={`w-5 h-5 rounded-full border transition-all ${
-                          speakerColor.toUpperCase() === c.hex.toUpperCase()
-                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
-                            : 'border-slate-300 hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: c.hex }}
-                        title={c.name}
-                      />
-                    ))}
-                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
-                      <input
-                        type="color"
-                        value={speakerColor}
-                        onChange={(e) => setSpeakerColor(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
-                        🎨
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* 4. Info Promosi & Kerjasama */}
-                <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border border-slate-300 shadow-xs shrink-0" style={{ backgroundColor: promoColor }} />
-                    <span className="text-xs font-semibold text-slate-700">Info & Kerjasama</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {COLOR_PRESETS.map((c) => (
-                      <button
-                        key={c.hex}
-                        type="button"
-                        onClick={() => setPromoColor(c.hex)}
-                        className={`w-5 h-5 rounded-full border transition-all ${
-                          promoColor.toUpperCase() === c.hex.toUpperCase()
-                            ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 z-10 border-white'
-                            : 'border-slate-300 hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: c.hex }}
-                        title={c.name}
-                      />
-                    ))}
-                    <label className="relative cursor-pointer ml-1" title="Pilih warna custom">
-                      <input
-                        type="color"
-                        value={promoColor}
-                        onChange={(e) => setPromoColor(e.target.value)}
-                        className="sr-only"
-                      />
-                      <div className="w-6 h-6 rounded-md border border-slate-300 flex items-center justify-center text-xs bg-white hover:border-slate-400 shadow-xs">
-                        🎨
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Background Section */}
-            {designFormat === 'poster' ? (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                      <ImageIcon size={16} className="text-slate-400" />
-                      Background Poster Portrait (1080×1350)
-                    </label>
-                    {portraitBgUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setCustomPortraitBg(null)}
-                        className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors"
-                      >
-                        Reset ke Hitam Polos
-                      </button>
-                    )}
-                  </div>
-
-                  {portraitBgUrl ? (
-                    <div className="relative aspect-[4/5] max-h-52 w-auto mx-auto rounded-2xl overflow-hidden border-2 border-orange-500 shadow-md group">
-                      <img src={portraitBgUrl} alt="Background Portrait" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                        <label className="cursor-pointer bg-white text-slate-900 px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-slate-100 transition-all">
-                          <Upload size={14} />
-                          Ganti Background
-                          <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setCustomPortraitBg(null)}
-                          className="bg-red-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-lg hover:bg-red-700 transition-all"
-                        >
-                          Pakai Hitam Polos
+                          {activeStyle.showEventName ? <Eye size={11} /> : <EyeOff size={11} />}
+                          {activeStyle.showEventName ? 'Teks Acara: Tampil' : 'Teks Acara: Sembunyi'}
                         </button>
                       </div>
+
+                      {dialogs.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {dialogs.map((d) => {
+                            const isSelected = selectedDialogId === d.id;
+                            const savedPreset = resolveSavedDialogPreset(d.id, d.name);
+                            const hasCustomPreset = Boolean(savedPreset);
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDialogId(d.id);
+                                  setEventName(d.name);
+                                  applyDialogSettings(d.id, d.name);
+                                }}
+                                className={`px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all border-2 text-center flex flex-col items-center justify-center gap-0.5 ${
+                                  isSelected
+                                    ? 'border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-500/10'
+                                    : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200 hover:bg-white'
+                                }`}
+                              >
+                                <span className="line-clamp-1">{d.name}</span>
+                                {hasCustomPreset && (
+                                  <span className={`text-[9px] font-semibold tracking-normal normal-case flex items-center gap-0.5 ${
+                                    isSelected ? 'text-orange-600' : 'text-emerald-600'
+                                  }`}>
+                                    <Sparkles size={9} /> {savedPreset?.selectedProgram || 'Custom'} · 16:9 & 4:5
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <Input
+                          value={eventName}
+                          onChange={(e) => setEventName(e.target.value)}
+                          className="bg-slate-50 rounded-xl"
+                          placeholder="Nama acara..."
+                        />
+                      )}
                     </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center bg-slate-50/80 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center gap-3">
-                      <div className="flex items-center gap-2 bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        Hitam Polos (Aktif)
-                      </div>
-                      <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">
-                        Background belum di-upload. Sesuai pengaturan, poster otomatis menggunakan warna hitam polos.
-                      </p>
-                      <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-2 transition-all">
-                        {isUploadingPortraitBg ? (
-                          <Loader2 size={14} className="animate-spin text-orange-500" />
-                        ) : (
-                          <Upload size={14} className="text-orange-400" />
-                        )}
-                        <span>Upload Background Portrait (1080×1350)</span>
-                        <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
+
+                    {/* Pilih Programa */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <Tv size={12} className="text-orange-500" />
+                        Kanal Programa
                       </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['PRO 1', 'PRO 2', 'PRO 4'] as const).map((prog) => (
+                          <button
+                            key={prog}
+                            type="button"
+                            onClick={() => setSelectedProgram(prog)}
+                            className={`py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 ${
+                              selectedProgram === prog
+                                ? 'border-orange-500 bg-orange-50 text-orange-700'
+                                : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-white'
+                            }`}
+                          >
+                            {prog}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Presenter picker for dialog presenter context */}
-                {presenters.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-slate-100">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-                      <UserCircle2 size={12} className="text-slate-400" />
-                      Presenter Acara (Opsional)
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {presenters.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setSelectedPresenterId(p.id)}
-                          className={`p-2.5 rounded-xl border transition-all text-left flex items-center gap-2.5 ${
-                            selectedPresenterId === p.id
-                              ? 'border-orange-500 bg-orange-50 text-orange-700 font-bold'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
-                            {p.background_portrait_url || p.background_url ? (
-                              <img src={p.background_portrait_url || p.background_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-slate-300 text-[10px]">🎙️</div>
-                            )}
-                          </div>
-                          <span className="text-xs uppercase truncate">{p.name}</span>
-                        </button>
-                      ))}
+                    {/* Judul Dialog */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <Type size={12} className="text-orange-500" />
+                        Judul Topik / Dialog (Tekan ENTER untuk baris baru)
+                      </label>
+                      <textarea
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Masukkan judul dialog..."
+                        rows={3}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-xs font-semibold resize-none uppercase leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Tanggal & Jam Siaran (Side-by-Side) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Tanggal */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <Calendar size={12} className="text-orange-500" />
+                          Tanggal
+                        </label>
+                        <div className="relative flex items-center">
+                          <Input
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="bg-slate-50 rounded-xl pr-9 uppercase font-semibold text-xs h-10"
+                            placeholder="SELASA, 29 JULI 2025"
+                          />
+                          <input
+                            ref={dateInputRef}
+                            type="date"
+                            value={parseIndonesianDate(date)}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                setDate(formatIndonesianDate(e.target.value));
+                              }
+                            }}
+                            className="sr-only"
+                            style={{ colorScheme: 'light' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => dateInputRef.current?.showPicker()}
+                            className="absolute right-2.5 flex items-center justify-center p-1 rounded-lg hover:bg-orange-50 transition-colors group"
+                            title="Pilih dari kalender"
+                          >
+                            <Calendar size={15} className="text-slate-400 group-hover:text-orange-500" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Jam Siaran */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <Clock size={12} className="text-orange-500" />
+                          Jam Siaran (WIB)
+                        </label>
+                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 h-10 rounded-xl">
+                          <input
+                            type="time"
+                            value={startTime}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setStartTime(val);
+                              setTime(`${val} – ${endTime} WIB`);
+                            }}
+                            className="bg-transparent text-slate-700 font-bold text-xs focus:outline-none cursor-pointer"
+                            style={{ colorScheme: 'light' }}
+                          />
+                          <span className="text-slate-400 font-bold text-xs">–</span>
+                          <input
+                            type="time"
+                            value={endTime}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEndTime(val);
+                              setTime(`${startTime} – ${val} WIB`);
+                            }}
+                            className="bg-transparent text-slate-700 font-bold text-xs focus:outline-none cursor-pointer"
+                            style={{ colorScheme: 'light' }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
-            ) : (
-              /* YouTube presenter background selection */
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                  <ImageIcon size={16} className="text-slate-400" />
-                  Pilih Presenter (Background 16:9)
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {presenters.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedPresenterId(p.id)}
-                      className={`p-3 rounded-2xl border-2 transition-all text-left space-y-2 ${
-                        selectedPresenterId === p.id
-                          ? 'border-orange-500 bg-orange-50 ring-4 ring-orange-500/10'
-                          : 'border-slate-100 bg-white hover:border-slate-200'
-                      }`}
-                    >
-                      <div className="w-full aspect-[3/2] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                        {p.background_url ? (
-                          <img src={p.background_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300">
-                            <ImageIcon size={20} />
-                          </div>
-                        )}
-                      </div>
-                      <span className={`text-xs font-bold uppercase tracking-wider block text-center ${
-                        selectedPresenterId === p.id ? 'text-orange-600' : 'text-slate-500'
-                      }`}>
-                        {p.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
-            {/* 4. Pilih Narasumber */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                  <UserCircle2 size={16} className="text-slate-400" />
-                  Jumlah Pembicara
-                </label>
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setSpeakerCount(n)}
-                      className={`w-8 h-8 rounded-md text-xs font-bold transition-all ${
-                        speakerCount === n ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {Array.from({ length: speakerCount }).map((_, i) => (
-                  <SpeakerSelect
-                    key={i}
-                    speakers={speakers}
-                    selectedSpeakerId={selectedSpeakerIds[i]}
-                    onSelect={(speaker) => handleSpeakerSelect(i, speaker?.id || null)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* 5. Atur Jarak Pembicara */}
-            <div className="space-y-6 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-              {speakerCount > 1 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                      <span className="text-slate-400">↔️</span>
-                      Jarak Antar Pembicara (Horizontal)
-                    </label>
-                    <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{speakerSpacingOffset > 0 ? `+${speakerSpacingOffset}` : speakerSpacingOffset} px</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="-100" 
-                    max="100" 
-                    step="5"
-                    value={speakerSpacingOffset} 
-                    onChange={(e) => setSpeakerSpacingOffset(Number(e.target.value))}
-                    className="w-full accent-orange-500"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                    <span className="text-slate-400">↕️</span>
-                    Jarak Vertikal Foto (Atas/Bawah)
-                  </label>
-                  <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{speakerYOffset > 0 ? `+${speakerYOffset}` : speakerYOffset} px</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="-150" 
-                  max="150" 
-                  step="5"
-                  value={speakerYOffset} 
-                  onChange={(e) => setSpeakerYOffset(Number(e.target.value))}
-                  className="w-full accent-orange-500"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                    <span className="text-slate-400">↕️</span>
-                    Jarak Vertikal Info Acara (Atas/Bawah)
-                  </label>
-                  <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{eventInfoYOffset > 0 ? `+${eventInfoYOffset}` : eventInfoYOffset} px</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="-150" 
-                  max="150" 
-                  step="5"
-                  value={eventInfoYOffset} 
-                  onChange={(e) => setEventInfoYOffset(Number(e.target.value))}
-                  className="w-full accent-orange-500"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 ml-1">
-                    <span className="text-slate-400">↔️</span>
-                    Jarak Horizontal Info Acara (Merenggang)
-                  </label>
-                  <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100">{eventInfoXSpacing > 0 ? `+${eventInfoXSpacing}` : eventInfoXSpacing} px</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="-150" 
-                  max="150" 
-                  step="5"
-                  value={eventInfoXSpacing} 
-                  onChange={(e) => setEventInfoXSpacing(Number(e.target.value))}
-                  className="w-full accent-orange-500"
-                />
-              </div>
-            </div>
-
-            {/* Settingan Default Template Card (Hanya Tampil di Akun Admin) */}
-            {isAdmin && (
-              <div className="bg-slate-900 text-white p-5 rounded-3xl space-y-3.5 shadow-xl shadow-slate-900/10">
-                <div className="flex items-center justify-between">
+            {/* SECTION 2: NARASUMBER & BACKGROUND (16:9 DAN 4:5) */}
+            {showMedia && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('media')}
+                  className="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/70 flex items-center justify-between text-left transition-colors border-b border-slate-100"
+                >
                   <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-orange-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                      Settingan Default Per Poster / Acara
+                    <span className="w-5 h-5 rounded-md bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
+                      2
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      Narasumber & Background (16:9 & 4:5)
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <ShieldCheck size={11} /> Admin
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Acara / Poster yang Diatur:</span>
-                    <span className="text-xs font-bold text-orange-400 flex items-center gap-1.5 mt-0.5">
-                      <Mic2 size={12} /> {activeDialogName}
-                    </span>
-                  </div>
-                  {Boolean(selectedDialogId && resolveSavedDialogPreset(selectedDialogId, activeDialogName)) ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Preset Tersimpan
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
-                      Default Sistem
-                    </span>
+                  {activeEditorTab === 'all' && (
+                    openSections.media ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />
                   )}
-                </div>
+                </button>
 
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Settingan ini disimpan <strong>khusus untuk acara {activeDialogName} saja</strong> (tidak mengubah acara lain). Saat tombol <strong>{activeDialogName}</strong> di-klik, konfigurasi ini langsung otomatis dimuat.
-                </p>
+                {(activeEditorTab !== 'all' || openSections.media) && (
+                  <div className="p-4 space-y-5">
+                    {/* A. Pilih Narasumber (1-5) */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                          <UserCircle2 size={14} className="text-orange-500" />
+                          Jumlah & Data Narasumber
+                        </label>
+                        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setSpeakerCount(n)}
+                              className={`w-7 h-7 rounded-md text-xs font-bold transition-all ${
+                                speakerCount === n ? 'bg-white text-orange-600 shadow-xs' : 'text-slate-400 hover:text-slate-600'
+                              }`}
+                            >
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                {saveSuccessMsg && (
-                  <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 font-medium">
-                    <Check size={14} className="text-emerald-400 shrink-0" />
-                    <span>{saveSuccessMsg}</span>
+                      <div className="space-y-2.5">
+                        {Array.from({ length: speakerCount }).map((_, i) => (
+                          <SpeakerSelect
+                            key={i}
+                            speakers={speakers}
+                            selectedSpeakerId={selectedSpeakerIds[i]}
+                            onSelect={(speaker) => handleSpeakerSelect(i, speaker?.id || null)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* B. Background 16:9 (Presenter Landscape) */}
+                    <div className="space-y-2 pt-3 border-t border-slate-100">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                        <Tv size={13} className="text-orange-500" />
+                        Background 16:9 — Pilih Presenter
+                      </label>
+                      {presenters.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {presenters.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setSelectedPresenterId(p.id)}
+                              className={`p-2 rounded-xl border-2 transition-all text-left space-y-1.5 ${
+                                selectedPresenterId === p.id
+                                  ? 'border-orange-500 bg-orange-50/70'
+                                  : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'
+                              }`}
+                            >
+                              <div className="w-full aspect-video bg-slate-200 rounded-lg overflow-hidden border border-slate-200">
+                                {p.background_url ? (
+                                  <img src={p.background_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                    <ImageIcon size={16} />
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider block text-center truncate ${
+                                selectedPresenterId === p.id ? 'text-orange-700' : 'text-slate-600'
+                              }`}>
+                                {p.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">Belum ada presenter untuk acara ini.</p>
+                      )}
+                    </div>
+
+                    {/* C. Background 4:5 (Poster Portrait 1080x1350) */}
+                    <div className="space-y-2 pt-3 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                          <Smartphone size={13} className="text-orange-500" />
+                          Background 4:5 — Poster Portrait (1080×1350)
+                        </label>
+                        {portraitBgUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomPortraitBg(null)}
+                            className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            Gunakan Hitam Polos
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <div className="w-14 aspect-[4/5] rounded-lg overflow-hidden border border-slate-300 bg-black shrink-0 flex items-center justify-center">
+                          {portraitBgUrl ? (
+                            <img src={portraitBgUrl} alt="BG 4:5" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400 text-center px-1">HITAM</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <p className="text-xs font-bold text-slate-700">
+                            {portraitBgUrl ? 'Background Portrait Aktif' : 'Mode Hitam Polos (Default)'}
+                          </p>
+                          <p className="text-[10px] text-slate-500 leading-snug">
+                            Upload gambar 1080×1350 khusus untuk tampilan 4:5. Ikut tersimpan saat Anda klik Simpan Default.
+                          </p>
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 transition-all">
+                              {isUploadingPortraitBg ? (
+                                <Loader2 size={12} className="animate-spin text-orange-400" />
+                              ) : (
+                                <Upload size={12} className="text-orange-400" />
+                              )}
+                              <span>{portraitBgUrl ? 'Ganti Background 4:5' : 'Upload Background 4:5'}</span>
+                              <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
+              </div>
+            )}
 
-                <div className="space-y-2">
-                  <Button
-                    type="button"
-                    onClick={handleSaveThumbnailSettings}
-                    disabled={isSavingSettings}
-                    className="w-full h-11 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
-                  >
-                    {isSavingSettings ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <Save size={15} />
-                    )}
-                    <span>Simpan Default Khusus &ldquo;{activeDialogName}&rdquo;</span>
-                  </Button>
+            {/* SECTION 3: LOGO & WARNA TEKS */}
+            {showLogoWarna && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('logo_warna')}
+                  className="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/70 flex items-center justify-between text-left transition-colors border-b border-slate-100"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
+                      3
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      Ukuran Logo, Varian & Warna Teks
+                    </span>
+                  </div>
+                  {activeEditorTab === 'all' && (
+                    openSections.logo_warna ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />
+                  )}
+                </button>
 
+                {(activeEditorTab !== 'all' || openSections.logo_warna) && (
+                  <div className="p-4 space-y-4">
+                    {renderFormatTargetBar()}
+
+                    {/* Quick Actions for Logos */}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        Pengaturan Logo Header
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => updateStyle({ rriLogoTheme: 'white', programLogoTheme: 'white', hutRiLogoTheme: 'white' })}
+                          className="text-[10px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 border border-slate-200"
+                        >
+                          <Sun size={10} className="text-amber-500" />
+                          Semua Putih
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateStyle({ rriLogoTheme: 'dark', programLogoTheme: 'dark', hutRiLogoTheme: 'dark' })}
+                          className="text-[10px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 border border-slate-200"
+                        >
+                          <Moon size={10} className="text-indigo-500" />
+                          Semua Dark
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateStyle({
+                              rriLogoPosition: activeStyle.rriLogoPosition === 'left' ? 'right' : 'left',
+                              programLogoPosition: activeStyle.programLogoPosition === 'left' ? 'right' : 'left',
+                            })
+                          }
+                          className="text-[10px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-orange-50 border border-orange-200/60"
+                        >
+                          <ArrowLeftRight size={11} />
+                          Tukar Posisi
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Grid Logo RRI & Logo Programa */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {/* Logo RRI */}
+                      <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700">Logo RRI</span>
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ showRriLogo: !activeStyle.showRriLogo })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                              activeStyle.showRriLogo 
+                                ? 'bg-orange-100 text-orange-700' 
+                                : 'bg-slate-200 text-slate-500'
+                            }`}
+                          >
+                            {activeStyle.showRriLogo ? <Eye size={11} /> : <EyeOff size={11} />}
+                            {activeStyle.showRriLogo ? 'Tampil' : 'Sembunyi'}
+                          </button>
+                        </div>
+
+                        {activeStyle.showRriLogo && (
+                          <div className="space-y-2 pt-1.5 border-t border-slate-200/60">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
+                              {(['left', 'right'] as const).map((pos) => (
+                                <button
+                                  key={pos}
+                                  type="button"
+                                  onClick={() => updateStyle({ rriLogoPosition: pos })}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                    activeStyle.rriLogoPosition === pos
+                                      ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                >
+                                  {pos === 'left' ? 'Kiri' : 'Kanan'}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
+                              <button
+                                type="button"
+                                onClick={() => updateStyle({ rriLogoTheme: 'white' })}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                  activeStyle.rriLogoTheme === 'white'
+                                    ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                <Sun size={10} className="text-amber-500" /> Putih
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateStyle({ rriLogoTheme: 'dark' })}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                  activeStyle.rriLogoTheme === 'dark'
+                                    ? 'bg-slate-900 text-white shadow-xs'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                <Moon size={10} className="text-indigo-400" /> Dark
+                              </button>
+                            </div>
+
+                            {/* Ukuran Logo RRI */}
+                            <div className="space-y-1 pt-1 border-t border-slate-200/50">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-slate-500">Ukuran Logo:</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200/60">
+                                    {activeStyle.rriLogoScale}%
+                                  </span>
+                                  {activeStyle.rriLogoScale !== 100 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateStyle({ rriLogoScale: 100 })}
+                                      className="text-[9px] font-bold text-slate-400 hover:text-orange-600"
+                                    >
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <input
+                                type="range"
+                                min={50}
+                                max={200}
+                                step={5}
+                                value={activeStyle.rriLogoScale}
+                                onChange={(e) => updateStyle({ rriLogoScale: Number(e.target.value) })}
+                                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Logo Programa */}
+                      <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700">Logo {selectedProgram}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ showProgramLogo: !activeStyle.showProgramLogo })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-colors ${
+                              activeStyle.showProgramLogo 
+                                ? 'bg-orange-100 text-orange-700' 
+                                : 'bg-slate-200 text-slate-500'
+                            }`}
+                          >
+                            {activeStyle.showProgramLogo ? <Eye size={11} /> : <EyeOff size={11} />}
+                            {activeStyle.showProgramLogo ? 'Tampil' : 'Sembunyi'}
+                          </button>
+                        </div>
+
+                        {activeStyle.showProgramLogo && (
+                          <div className="space-y-2 pt-1.5 border-t border-slate-200/60">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-medium text-slate-400 mr-auto">Posisi:</span>
+                              {(['left', 'right'] as const).map((pos) => (
+                                <button
+                                  key={pos}
+                                  type="button"
+                                  onClick={() => updateStyle({ programLogoPosition: pos })}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                    activeStyle.programLogoPosition === pos
+                                      ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                >
+                                  {pos === 'left' ? 'Kiri' : 'Kanan'}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] font-medium text-slate-400 mr-auto">Varian:</span>
+                              <button
+                                type="button"
+                                onClick={() => updateStyle({ programLogoTheme: 'white' })}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                  activeStyle.programLogoTheme === 'white'
+                                    ? 'bg-white text-orange-600 shadow-xs border border-slate-200'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                <Sun size={10} className="text-amber-500" /> Putih
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateStyle({ programLogoTheme: 'dark' })}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                  activeStyle.programLogoTheme === 'dark'
+                                    ? 'bg-slate-900 text-white shadow-xs'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                <Moon size={10} className="text-indigo-400" /> Dark
+                              </button>
+                            </div>
+
+                            {/* Ukuran Logo Programa */}
+                            <div className="space-y-1 pt-1 border-t border-slate-200/50">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-slate-500">Ukuran Logo:</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200/60">
+                                    {activeStyle.programLogoScale}%
+                                  </span>
+                                  {activeStyle.programLogoScale !== 100 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateStyle({ programLogoScale: 100 })}
+                                      className="text-[9px] font-bold text-slate-400 hover:text-orange-600"
+                                    >
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <input
+                                type="range"
+                                min={50}
+                                max={200}
+                                step={5}
+                                value={activeStyle.programLogoScale}
+                                onChange={(e) => updateStyle({ programLogoScale: Number(e.target.value) })}
+                                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Logo HUT RI & Sosial Media (Compact Row) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {/* Logo HUT RI */}
+                      <div className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700">Logo HUT RI</span>
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ showHutRiLogo: !activeStyle.showHutRiLogo })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 ${
+                              activeStyle.showHutRiLogo ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-500'
+                            }`}
+                          >
+                            {activeStyle.showHutRiLogo ? <Eye size={11} /> : <EyeOff size={11} />}
+                            {activeStyle.showHutRiLogo ? 'Tampil' : 'Sembunyi'}
+                          </button>
+                        </div>
+                        {activeStyle.showHutRiLogo && (
+                          <div className="flex items-center gap-1 pt-1 border-t border-slate-200/60">
+                            <span className="text-[10px] text-slate-400 mr-auto">Varian:</span>
+                            <button
+                              type="button"
+                              onClick={() => updateStyle({ hutRiLogoTheme: 'white' })}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                activeStyle.hutRiLogoTheme === 'white' ? 'bg-white text-orange-600 border border-slate-200' : 'text-slate-500'
+                              }`}
+                            >
+                              Putih
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateStyle({ hutRiLogoTheme: 'dark' })}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                activeStyle.hutRiLogoTheme === 'dark' ? 'bg-slate-900 text-white' : 'text-slate-500'
+                              }`}
+                            >
+                              Dark
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Gambar Sosial Media */}
+                      <div className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700">Gambar Sosmed</span>
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ showSocialMediaLogo: !activeStyle.showSocialMediaLogo })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 ${
+                              activeStyle.showSocialMediaLogo ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-500'
+                            }`}
+                          >
+                            {activeStyle.showSocialMediaLogo ? <Eye size={11} /> : <EyeOff size={11} />}
+                            {activeStyle.showSocialMediaLogo ? 'Tampil' : 'Sembunyi'}
+                          </button>
+                        </div>
+                        {activeStyle.showSocialMediaLogo && (
+                          <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-200/60">
+                            <label className="cursor-pointer px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold inline-flex items-center gap-1">
+                              {isUploadingSocialMedia ? <Loader2 size={10} className="animate-spin" /> : <Upload size={10} />}
+                              <span>Ganti</span>
+                              <input type="file" accept="image/*" onChange={handleSocialMediaLogoUpload} className="hidden" />
+                            </label>
+                            {(customSocialMediaLogo || getBrandingField('social_media_logo_url')) && (
+                              <button
+                                type="button"
+                                onClick={handleResetSocialMediaLogo}
+                                className="text-[10px] font-bold text-slate-500 hover:text-red-600"
+                              >
+                                Reset Bawaan
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Warna Font & Teks */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                          <Palette size={13} className="text-orange-500" />
+                          Warna Font & Teks
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateStyle({
+                              titleColor: '#FFFFFF',
+                              infoColor: '#FFFFFF',
+                              speakerColor: '#FFFFFF',
+                              promoColor: '#FFFFFF',
+                            })
+                          }
+                          className="text-[10px] font-bold text-slate-500 hover:text-orange-600 flex items-center gap-1"
+                        >
+                          <RotateCcw size={11} /> Reset Putih
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {[
+                          { label: 'Judul Dialog', key: 'titleColor' as const, val: activeStyle.titleColor },
+                          { label: 'Info & Tanggal', key: 'infoColor' as const, val: activeStyle.infoColor },
+                          { label: 'Nama Pembicara', key: 'speakerColor' as const, val: activeStyle.speakerColor },
+                          { label: 'Info & Kerjasama', key: 'promoColor' as const, val: activeStyle.promoColor },
+                        ].map((item) => (
+                          <div key={item.key} className="flex items-center justify-between gap-2 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: item.val }} />
+                              <span className="text-xs font-semibold text-slate-700">{item.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {COLOR_PRESETS.map((c) => (
+                                <button
+                                  key={c.hex}
+                                  type="button"
+                                  onClick={() => updateStyle({ [item.key]: c.hex })}
+                                  className={`w-4 h-4 rounded-full border transition-all ${
+                                    item.val.toUpperCase() === c.hex.toUpperCase()
+                                      ? 'scale-125 ring-2 ring-orange-500 ring-offset-1 border-white'
+                                      : 'border-slate-300 hover:scale-110'
+                                  }`}
+                                  style={{ backgroundColor: c.hex }}
+                                  title={c.name}
+                                />
+                              ))}
+                              <label className="relative cursor-pointer ml-1" title="Pilih warna bebas">
+                                <input
+                                  type="color"
+                                  value={item.val}
+                                  onChange={(e) => updateStyle({ [item.key]: e.target.value })}
+                                  className="sr-only"
+                                />
+                                <div className="w-5 h-5 rounded border border-slate-300 flex items-center justify-center text-[10px] bg-white">
+                                  🎨
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SECTION 4: POSISI & TATA LETAK (16:9 & 4:5) */}
+            {showPosisi && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('posisi')}
+                  className="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100/70 flex items-center justify-between text-left transition-colors border-b border-slate-100"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-md bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
+                      4
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      Posisi Judul, Foto & Jarak Elemen
+                    </span>
+                  </div>
+                  {activeEditorTab === 'all' && (
+                    openSections.posisi ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />
+                  )}
+                </button>
+
+                {(activeEditorTab !== 'all' || openSections.posisi) && (
+                  <div className="p-4 space-y-4">
+                    {renderFormatTargetBar()}
+
+                    {/* A. Posisi Judul */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Move size={13} className="text-orange-500" />
+                          Posisi Judul Dialog
+                        </span>
+                        {(activeStyle.titleXOffset !== 0 || activeStyle.titleYOffset !== 0) && (
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ titleXOffset: 0, titleYOffset: 0 })}
+                            className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
+                          >
+                            Reset Judul
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Horizontal (X)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.titleXOffset > 0 ? `+${activeStyle.titleXOffset}` : activeStyle.titleXOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-200"
+                            max="400"
+                            step="5"
+                            value={activeStyle.titleXOffset}
+                            onChange={(e) => updateStyle({ titleXOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Vertikal (Y)</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.titleYOffset > 0 ? `+${activeStyle.titleYOffset}` : activeStyle.titleYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-120"
+                            max="200"
+                            step="5"
+                            value={activeStyle.titleYOffset}
+                            onChange={(e) => updateStyle({ titleYOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* B. Posisi & Jarak Foto Pembicara */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">Posisi & Jarak Foto Pembicara</span>
+                        {(activeStyle.speakerSpacingOffset !== 0 || activeStyle.speakerYOffset !== 0) && (
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ speakerSpacingOffset: 0, speakerYOffset: 0 })}
+                            className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
+                          >
+                            Reset Foto
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Naik / Turun Foto</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.speakerYOffset > 0 ? `+${activeStyle.speakerYOffset}` : activeStyle.speakerYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-150"
+                            max="150"
+                            step="5"
+                            value={activeStyle.speakerYOffset}
+                            onChange={(e) => updateStyle({ speakerYOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Jarak Antar Foto</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.speakerSpacingOffset > 0 ? `+${activeStyle.speakerSpacingOffset}` : activeStyle.speakerSpacingOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-100"
+                            max="100"
+                            step="5"
+                            value={activeStyle.speakerSpacingOffset}
+                            onChange={(e) => updateStyle({ speakerSpacingOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* C. Posisi Info Acara (Tanggal & Jam) */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">Posisi Baris Info Acara (Tanggal & Jam)</span>
+                        {(activeStyle.eventInfoYOffset !== 0 || activeStyle.eventInfoXSpacing !== 0) && (
+                          <button
+                            type="button"
+                            onClick={() => updateStyle({ eventInfoYOffset: 0, eventInfoXSpacing: 0 })}
+                            className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
+                          >
+                            Reset Info
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↕️ Vertikal Info</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.eventInfoYOffset > 0 ? `+${activeStyle.eventInfoYOffset}` : activeStyle.eventInfoYOffset} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-150"
+                            max="150"
+                            step="5"
+                            value={activeStyle.eventInfoYOffset}
+                            onChange={(e) => updateStyle({ eventInfoYOffset: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-600">
+                            <span>↔️ Renggang Info</span>
+                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                              {activeStyle.eventInfoXSpacing > 0 ? `+${activeStyle.eventInfoXSpacing}` : activeStyle.eventInfoXSpacing} px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-150"
+                            max="150"
+                            step="5"
+                            value={activeStyle.eventInfoXSpacing}
+                            onChange={(e) => updateStyle({ eventInfoXSpacing: Number(e.target.value) })}
+                            className="w-full accent-orange-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Sticky Bottom Action Bar (Save Preset 16:9 & 4:5 + Download Buttons) */}
+          <div className="p-4 bg-slate-50 border-t border-slate-200/80 space-y-2.5 shrink-0 z-20">
+            {saveSuccessMsg && (
+              <div className="p-2 bg-emerald-500 text-white rounded-xl text-xs flex items-center gap-2 font-bold shadow-xs">
+                <Check size={14} className="shrink-0" />
+                <span>{saveSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Admin Preset Save Bar (Saves Both 16:9 & 4:5 or Individually) */}
+            {isAdmin && (
+              <div className="p-2.5 bg-slate-900 text-white rounded-2xl space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                    <ShieldCheck size={12} className="text-orange-400" />
+                    Preset Default: <strong className="text-orange-400">{activeDialogName}</strong>
+                  </span>
                   {Boolean(selectedDialogId && resolveSavedDialogPreset(selectedDialogId, activeDialogName)) && (
                     <button
                       type="button"
                       onClick={handleResetCurrentDialogSettings}
                       disabled={isSavingSettings}
-                      className="w-full text-center text-[11px] text-slate-400 hover:text-red-400 transition-colors py-1 flex items-center justify-center gap-1"
+                      className="text-[10px] font-bold text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors"
+                      title="Reset settingan default acara ini ke bawaan sistem"
                     >
-                      <RotateCcw size={11} />
-                      Reset default &ldquo;{activeDialogName}&rdquo; ke bawaan sistem
+                      <RotateCcw size={10} /> Reset
                     </button>
                   )}
+                </div>
+
+                <div className="grid grid-cols-12 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveThumbnailSettings('both')}
+                    disabled={isSavingSettings}
+                    className="col-span-6 py-2 px-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                  >
+                    {isSavingSettings ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                    <span>Simpan 16:9 & 4:5</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveThumbnailSettings('youtube')}
+                    disabled={isSavingSettings}
+                    className="col-span-3 py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 border border-slate-700 transition-all"
+                    title="Simpan khusus settingan 16:9 (YouTube) untuk acara ini"
+                  >
+                    <Tv size={11} className="text-orange-400" />
+                    <span>Simpan 16:9</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveThumbnailSettings('poster')}
+                    disabled={isSavingSettings}
+                    className="col-span-3 py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold flex items-center justify-center gap-1 border border-slate-700 transition-all"
+                    title="Simpan khusus settingan 4:5 (Poster) untuk acara ini"
+                  >
+                    <Smartphone size={11} className="text-orange-400" />
+                    <span>Simpan 4:5</span>
+                  </button>
                 </div>
               </div>
             )}
 
-            <div className="pt-4 space-y-2.5">
-              <Button
-                onClick={handleDownload}
-                disabled={isExporting}
-                className="w-full h-14 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl shadow-xl shadow-orange-500/30 flex items-center justify-center gap-3 font-bold group"
-              >
-                {isExporting ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <>
-                    <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
-                    <span>
-                      Download {designFormat === 'poster' ? 'Poster Siaran (1080 × 1350)' : 'Thumbnail YouTube (1280 × 720)'}
-                    </span>
-                  </>
-                )}
-              </Button>
-
+            {/* Download Buttons */}
+            <div className="grid grid-cols-12 gap-2">
               <Button
                 type="button"
                 onClick={handleDownloadBoth}
                 disabled={isExporting}
-                variant="outline"
-                className="w-full h-11 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all"
+                className="col-span-6 h-11 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 text-xs font-bold"
               >
-                <Sparkles size={14} className="text-orange-500" />
-                Download Keduanya (YouTube + Poster Sekaligus)
+                {isExporting ? <Loader2 className="animate-spin" size={15} /> : <Download size={15} />}
+                <span>Download Keduanya</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleDownloadSingle('youtube')}
+                disabled={isExporting}
+                className="col-span-3 h-11 border-slate-200 bg-white hover:bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center gap-1 text-[11px] font-bold px-2"
+              >
+                <Tv size={13} className="text-orange-500 shrink-0" />
+                <span>16:9</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleDownloadSingle('poster')}
+                disabled={isExporting}
+                className="col-span-3 h-11 border-slate-200 bg-white hover:bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center gap-1 text-[11px] font-bold px-2"
+              >
+                <Smartphone size={13} className="text-orange-500 shrink-0" />
+                <span>4:5</span>
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Right: Live Preview */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">
-                Live Preview ({designFormat === 'poster' ? '1080 × 1350' : '1280 × 720'})
+        {/* RIGHT PANEL: Simultaneous 16:9 AND 4:5 Live Previews */}
+        <div className="lg:col-span-7 space-y-5 lg:sticky lg:top-20">
+          {/* Top Preview Control Bar */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Live Preview Sekaligus (16:9 & 4:5)
               </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-orange-100 text-orange-700">
-                {designFormat === 'poster' ? 'Poster 4:5' : 'Thumbnail 16:9'}
-              </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Quick toggle tab */}
+            <div className="flex items-center gap-2">
+              {/* Switch between Side-by-Side vs Stacked Large View */}
               <div className="flex items-center bg-slate-100 p-1 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setDesignFormat('youtube')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    designFormat === 'youtube'
-                      ? 'bg-white text-orange-600 shadow-sm'
+                  onClick={() => setPreviewLayout('side_by_side')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+                    previewLayout === 'side_by_side'
+                      ? 'bg-white text-orange-600 shadow-2xs'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
-                  title="Thumbnail YouTube (1280x720)"
+                  title="Tampilkan 16:9 dan 4:5 berdampingan"
                 >
-                  <Tv size={12} />
-                  16:9
+                  <Columns2 size={12} />
+                  Berdampingan
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDesignFormat('poster')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    designFormat === 'poster'
-                      ? 'bg-white text-orange-600 shadow-sm'
+                  onClick={() => setPreviewLayout('stacked')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+                    previewLayout === 'stacked'
+                      ? 'bg-white text-orange-600 shadow-2xs'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
-                  title="Poster Siaran (1080x1350)"
+                  title="Tampilkan ukuran besar atas-bawah"
                 >
-                  <Smartphone size={12} />
-                  4:5
+                  <Rows2 size={12} />
+                  Ukuran Besar
                 </button>
               </div>
-
-              {/* Tombol Simpan Default (Hanya Muncul di Akun Admin) */}
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={handleSaveThumbnailSettings}
-                  disabled={isSavingSettings}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-orange-200 bg-white hover:bg-orange-50 text-orange-600 shadow-xs transition-all"
-                  title={`Simpan settingan generator saat ini sebagai default khusus untuk acara ${activeDialogName}`}
-                >
-                  <Save size={13} />
-                  <span>Simpan Default ({activeDialogName})</span>
-                </button>
-              )}
-
-              <button 
-                onClick={fetchInitialData}
-                className="text-slate-400 hover:text-orange-500 transition-colors flex items-center gap-1.5 text-xs font-bold"
-              >
-                <RefreshCw size={14} />
-                REFRESH
-              </button>
             </div>
           </div>
 
-          <div className="sticky top-28 space-y-4">
-            {designFormat === 'youtube' ? (
-              <ThumbnailPreview
-                data={youtubePreviewData}
-                id="thumbnail-svg"
-              />
-            ) : (
-              <PosterPreview
-                data={posterPreviewData}
-                id="poster-svg"
-              />
-            )}
+          {/* Both Previews Rendered Simultaneously */}
+          <div
+            className={
+              previewLayout === 'side_by_side'
+                ? 'grid grid-cols-1 xl:grid-cols-12 gap-5 items-start'
+                : 'space-y-6'
+            }
+          >
+            {/* 1. THUMBNAIL YOUTUBE (16:9) CARD */}
+            <div
+              className={`${
+                previewLayout === 'side_by_side' ? 'xl:col-span-7' : 'w-full'
+              } bg-white rounded-3xl border-2 transition-all p-4 space-y-3 shadow-lg ${
+                editTarget === 'youtube'
+                  ? 'border-orange-500 ring-4 ring-orange-500/10'
+                  : 'border-slate-200/80'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                    <Tv size={15} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Thumbnail YouTube (16:9)
+                    </h3>
+                    <p className="text-[10px] font-medium text-slate-400">Resolusi 1280 × 720 px</p>
+                  </div>
+                </div>
 
-            {/* Hidden off-screen instance of the other format so downloading either/both works instantly */}
-            <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none opacity-0">
-              {designFormat === 'youtube' ? (
-                <PosterPreview data={posterPreviewData} id="poster-svg" />
-              ) : (
-                <ThumbnailPreview data={youtubePreviewData} id="thumbnail-svg" />
-              )}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditTarget(editTarget === 'youtube' ? 'both' : 'youtube')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                      editTarget === 'youtube'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {editTarget === 'youtube' ? '✓ Sedang Diedit Khusus 16:9' : 'Edit Khusus 16:9'}
+                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThumbnailSettings('youtube')}
+                      disabled={isSavingSettings}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1 transition-all"
+                      title="Simpan settingan 16:9 ini sebagai default"
+                    >
+                      <Save size={11} className="text-orange-400" />
+                      Simpan 16:9
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadSingle('youtube')}
+                    disabled={isExporting}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1 transition-all"
+                  >
+                    <Download size={11} />
+                    PNG
+                  </button>
+                </div>
+              </div>
+
+              <ThumbnailPreview data={youtubePreviewData} id="thumbnail-svg" />
+            </div>
+
+            {/* 2. POSTER SIARAN (4:5) CARD */}
+            <div
+              className={`${
+                previewLayout === 'side_by_side' ? 'xl:col-span-5' : 'w-full'
+              } bg-white rounded-3xl border-2 transition-all p-4 space-y-3 shadow-lg ${
+                editTarget === 'poster'
+                  ? 'border-orange-500 ring-4 ring-orange-500/10'
+                  : 'border-slate-200/80'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                    <Smartphone size={15} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Poster Siaran (4:5)
+                    </h3>
+                    <p className="text-[10px] font-medium text-slate-400">Resolusi 1080 × 1350 px</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditTarget(editTarget === 'poster' ? 'both' : 'poster')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                      editTarget === 'poster'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {editTarget === 'poster' ? '✓ Sedang Diedit Khusus 4:5' : 'Edit Khusus 4:5'}
+                  </button>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThumbnailSettings('poster')}
+                      disabled={isSavingSettings}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1 transition-all"
+                      title="Simpan settingan 4:5 ini sebagai default"
+                    >
+                      <Save size={11} className="text-orange-400" />
+                      Simpan 4:5
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadSingle('poster')}
+                    disabled={isExporting}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1 transition-all"
+                  >
+                    <Download size={11} />
+                    PNG
+                  </button>
+                </div>
+              </div>
+
+              <PosterPreview data={posterPreviewData} id="poster-svg" />
             </div>
           </div>
         </div>

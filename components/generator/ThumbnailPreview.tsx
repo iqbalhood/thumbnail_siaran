@@ -41,6 +41,8 @@ export interface ThumbnailData {
   showSocialMediaLogo?: boolean;
   rriLogoPosition?: 'left' | 'right';
   programLogoPosition?: 'left' | 'right';
+  rriLogoScale?: number;
+  programLogoScale?: number;
   titleColor?: string;
   infoColor?: string;
   speakerColor?: string;
@@ -82,6 +84,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     showHutRiLogo,
     rriLogoPosition = 'left',
     programLogoPosition = 'right',
+    rriLogoScale = 100,
+    programLogoScale = 100,
     titleColor = '#FFFFFF',
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
@@ -99,43 +103,48 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
   // Check if date contains AGUSTUS
   const isAugust = date.toUpperCase().includes('AGUSTUS');
 
-  // Determine logo positions and visibility
+  // Determine logo positions, sizes, and visibility
   const showRri = showRriLogo !== false && Boolean(rriLogoUrl);
   const showProg = showProgramLogo !== false && Boolean(programLogoUrl);
 
+  const rriW = Math.round(140 * (rriLogoScale / 100));
+  const rriH = Math.round(70 * (rriLogoScale / 100));
+  const progW = Math.round(140 * (programLogoScale / 100));
+  const progH = Math.round(70 * (programLogoScale / 100));
+
   let rriX = 80;
-  let rriY = 50;
-  let progX = 1080;
-  let progY = 45;
+  let rriY = Math.round(85 - rriH / 2);
+  let progX = 1220 - progW;
+  let progY = Math.round(80 - progH / 2);
 
   if (showRri && showProg) {
     if (rriLogoPosition === 'right' && programLogoPosition === 'left') {
-      rriX = 1080;
-      rriY = 45;
+      rriX = 1220 - rriW;
+      rriY = Math.round(80 - rriH / 2);
       progX = 80;
-      progY = 50;
+      progY = Math.round(85 - progH / 2);
     } else if (rriLogoPosition === 'left' && programLogoPosition === 'left') {
       rriX = 80;
-      rriY = 50;
-      progX = 240;
-      progY = 45;
+      rriY = Math.round(85 - rriH / 2);
+      progX = 80 + rriW + 20;
+      progY = Math.round(80 - progH / 2);
     } else if (rriLogoPosition === 'right' && programLogoPosition === 'right') {
-      rriX = 920;
-      rriY = 45;
-      progX = 1080;
-      progY = 45;
+      progX = 1220 - progW;
+      progY = Math.round(80 - progH / 2);
+      rriX = progX - 20 - rriW;
+      rriY = Math.round(80 - rriH / 2);
     } else {
       rriX = 80;
-      rriY = 50;
-      progX = 1080;
-      progY = 45;
+      rriY = Math.round(85 - rriH / 2);
+      progX = 1220 - progW;
+      progY = Math.round(80 - progH / 2);
     }
   } else if (showRri) {
-    rriX = rriLogoPosition === 'right' ? 1080 : 80;
-    rriY = rriLogoPosition === 'right' ? 45 : 50;
+    rriX = rriLogoPosition === 'right' ? 1220 - rriW : 80;
+    rriY = Math.round((rriLogoPosition === 'right' ? 80 : 85) - rriH / 2);
   } else if (showProg) {
-    progX = programLogoPosition === 'left' ? 80 : 1080;
-    progY = programLogoPosition === 'left' ? 50 : 45;
+    progX = programLogoPosition === 'left' ? 80 : 1220 - progW;
+    progY = Math.round((programLogoPosition === 'left' ? 85 : 80) - progH / 2);
   }
 
   // Left-aligned speaker layouts starting from x=80
@@ -173,9 +182,9 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             href={rriLogoUrl}
             x={rriX}
             y={rriY}
-            width="140"
-            height="70"
-            preserveAspectRatio={rriX > 600 ? "xMaxYMid meet" : "xMinYMid meet"}
+            width={rriW}
+            height={rriH}
+            preserveAspectRatio={rriLogoPosition === 'right' ? "xMaxYMid meet" : "xMinYMid meet"}
           />
         )}
 
@@ -185,9 +194,9 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
             href={programLogoUrl}
             x={progX}
             y={progY}
-            width="140"
-            height="70"
-            preserveAspectRatio={progX > 600 ? "xMaxYMid meet" : "xMinYMid meet"}
+            width={progW}
+            height={progH}
+            preserveAspectRatio={programLogoPosition === 'right' ? "xMaxYMid meet" : "xMinYMid meet"}
           />
         )}
 

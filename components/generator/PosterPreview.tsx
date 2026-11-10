@@ -43,6 +43,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     showHutRiLogo,
     rriLogoPosition = 'left',
     programLogoPosition = 'right',
+    rriLogoScale = 100,
+    programLogoScale = 100,
     titleColor = '#FFFFFF',
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
@@ -59,43 +61,48 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
   const isAugust = date.toUpperCase().includes('AGUSTUS');
 
-  // Determine logo positions and visibility
+  // Determine logo positions, scale, and visibility
   const showRri = showRriLogo !== false && Boolean(rriLogoUrl);
   const showProg = showProgramLogo !== false && Boolean(programLogoUrl);
 
+  const rriW = Math.round(160 * (rriLogoScale / 100));
+  const rriH = Math.round(80 * (rriLogoScale / 100));
+  const progW = Math.round(160 * (programLogoScale / 100));
+  const progH = Math.round(80 * (programLogoScale / 100));
+
   let rriX = 70;
-  let rriY = 60;
-  let progX = 850;
-  let progY = 55;
+  let rriY = Math.round(100 - rriH / 2);
+  let progX = 1010 - progW;
+  let progY = Math.round(95 - progH / 2);
 
   if (showRri && showProg) {
     if (rriLogoPosition === 'right' && programLogoPosition === 'left') {
-      rriX = 850;
-      rriY = 55;
+      rriX = 1010 - rriW;
+      rriY = Math.round(95 - rriH / 2);
       progX = 70;
-      progY = 60;
+      progY = Math.round(100 - progH / 2);
     } else if (rriLogoPosition === 'left' && programLogoPosition === 'left') {
       rriX = 70;
-      rriY = 60;
-      progX = 250;
-      progY = 55;
+      rriY = Math.round(100 - rriH / 2);
+      progX = 70 + rriW + 20;
+      progY = Math.round(95 - progH / 2);
     } else if (rriLogoPosition === 'right' && programLogoPosition === 'right') {
-      rriX = 670;
-      rriY = 55;
-      progX = 850;
-      progY = 55;
+      progX = 1010 - progW;
+      progY = Math.round(95 - progH / 2);
+      rriX = progX - rriW - 20;
+      rriY = Math.round(95 - rriH / 2);
     } else {
       rriX = 70;
-      rriY = 60;
-      progX = 850;
-      progY = 55;
+      rriY = Math.round(100 - rriH / 2);
+      progX = 1010 - progW;
+      progY = Math.round(95 - progH / 2);
     }
   } else if (showRri) {
-    rriX = rriLogoPosition === 'right' ? 850 : 70;
-    rriY = rriLogoPosition === 'right' ? 55 : 60;
+    rriX = rriLogoPosition === 'right' ? 1010 - rriW : 70;
+    rriY = Math.round((rriLogoPosition === 'right' ? 95 : 100) - rriH / 2);
   } else if (showProg) {
-    progX = programLogoPosition === 'left' ? 70 : 850;
-    progY = programLogoPosition === 'left' ? 60 : 55;
+    progX = programLogoPosition === 'left' ? 70 : 1010 - progW;
+    progY = Math.round((programLogoPosition === 'left' ? 100 : 95) - progH / 2);
   }
 
   // Speaker layout configurations for 1080 x 1350 (4:5)
@@ -198,8 +205,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
             href={rriLogoUrl}
             x={rriX}
             y={rriY}
-            width="160"
-            height="80"
+            width={rriW}
+            height={rriH}
             preserveAspectRatio={rriX > 500 ? "xMaxYMid meet" : "xMinYMid meet"}
           />
         )}
@@ -210,8 +217,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
             href={programLogoUrl}
             x={progX}
             y={progY}
-            width="160"
-            height="80"
+            width={progW}
+            height={progH}
             preserveAspectRatio={progX > 500 ? "xMaxYMid meet" : "xMinYMid meet"}
           />
         )}

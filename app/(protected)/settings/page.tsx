@@ -815,16 +815,20 @@ export default function SettingsPage() {
               const saved = getDialogSavedPreset(d);
               const isCustomized = Boolean(saved);
               const program = saved?.selectedProgram || inferDefaultProgram(d.name);
-              const formatLabel = saved?.designFormat === 'poster' ? 'Poster (4:5)' : 'YouTube (16:9)';
-              const titleColorVal = saved?.titleColor || '#FFFFFF';
-              const infoColorVal = saved?.infoColor || '#FFFFFF';
-              const speakerColorVal = saved?.speakerColor || '#FFFFFF';
-              const promoColorVal = saved?.promoColor || '#FFFFFF';
-              const rriTheme = saved?.rriLogoTheme || 'white';
-              const progTheme = saved?.programLogoTheme || 'white';
-              const showEvent = saved?.showEventName !== undefined ? saved.showEventName : true;
-              const xOffset = saved?.titleXOffset || 0;
-              const yOffset = saved?.titleYOffset || 0;
+              const ytCfg = saved?.youtube || saved || {};
+              const posterCfg = saved?.poster || saved || {};
+              const formatLabel = isCustomized ? 'YouTube (16:9) & Poster (4:5)' : 'Default (16:9 & 4:5)';
+              const titleColorVal = ytCfg.titleColor || '#FFFFFF';
+              const infoColorVal = ytCfg.infoColor || '#FFFFFF';
+              const speakerColorVal = ytCfg.speakerColor || '#FFFFFF';
+              const promoColorVal = ytCfg.promoColor || '#FFFFFF';
+              const rriTheme = ytCfg.rriLogoTheme || 'white';
+              const progTheme = ytCfg.programLogoTheme || 'white';
+              const showEvent = ytCfg.showEventName !== undefined ? ytCfg.showEventName : true;
+              const xOffset = ytCfg.titleXOffset || 0;
+              const yOffset = ytCfg.titleYOffset || 0;
+              const posterXOffset = posterCfg.titleXOffset || 0;
+              const posterYOffset = posterCfg.titleYOffset || 0;
 
               return (
                 <div
@@ -926,7 +930,7 @@ export default function SettingsPage() {
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-500 block mt-0.5">
-                        Offset X: <strong>{xOffset}px</strong> · Y: <strong>{yOffset}px</strong>
+                        16:9 ({xOffset}, {yOffset}) · 4:5 ({posterXOffset}, {posterYOffset})
                       </span>
                     </div>
 
