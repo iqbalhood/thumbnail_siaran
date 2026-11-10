@@ -59,6 +59,8 @@ export interface ThumbnailData {
   speakerYOffset?: number;
   speakerTextOffset?: number;
   speakerTextYOffset?: number;
+  speakerLayoutMode?: 'row' | 'grid';
+  speakerRowSpacingOffset?: number;
   eventInfoYOffset?: number;
   eventInfoXSpacing?: number;
   phoneNumber?: string;
@@ -101,6 +103,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     speakerYOffset = 0,
     speakerTextOffset = 0,
     speakerTextYOffset = 0,
+    speakerLayoutMode = 'row',
+    speakerRowSpacingOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
@@ -153,8 +157,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     progY = Math.round((programLogoPosition === 'left' ? 85 : 80) - progH / 2);
   }
 
-  // Left-aligned speaker layouts starting from x=80
-  const speakerLayouts: Record<number, any> = {
+  // Left-aligned single-row speaker layouts starting from x=80
+  const rowSpeakerLayouts: Record<number, any> = {
     1: { positions: [{ x: 180, y: 405 }], circleR: 90, textWidth: 600, fontSize: 32, posFontSize: 20 },
     2: { positions: [{ x: 150, y: 405 }, { x: 410, y: 405 }], circleR: 70, textWidth: 200, fontSize: 15, posFontSize: 11 },
     3: { positions: [{ x: 145, y: 405 }, { x: 365, y: 405 }, { x: 585, y: 405 }], circleR: 65, textWidth: 180, fontSize: 14, posFontSize: 11 },
@@ -162,9 +166,49 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     5: { positions: [{ x: 120, y: 405 }, { x: 290, y: 405 }, { x: 460, y: 405 }, { x: 630, y: 405 }, { x: 800, y: 405 }], circleR: 48, textWidth: 140, fontSize: 12, posFontSize: 9 },
   };
 
+  // 2-row Grid speaker layouts for 3, 4, and 5 speakers
+  const gridSpeakerLayouts: Record<number, any> = {
+    3: {
+      positions: [
+        { x: 185, y: 365, row: 0, colOffset: -1 },
+        { x: 435, y: 365, row: 0, colOffset: 1 },
+        { x: 310, y: 510, row: 1, colOffset: 0 },
+      ],
+      circleR: 46,
+      textWidth: 215,
+      fontSize: 13.5,
+      posFontSize: 10,
+    },
+    4: {
+      positions: [
+        { x: 185, y: 365, row: 0, colOffset: -1 },
+        { x: 435, y: 365, row: 0, colOffset: 1 },
+        { x: 185, y: 510, row: 1, colOffset: -1 },
+        { x: 435, y: 510, row: 1, colOffset: 1 },
+      ],
+      circleR: 46,
+      textWidth: 215,
+      fontSize: 13.5,
+      posFontSize: 10,
+    },
+    5: {
+      positions: [
+        { x: 145, y: 365, row: 0, colOffset: -1 },
+        { x: 355, y: 365, row: 0, colOffset: 0 },
+        { x: 565, y: 365, row: 0, colOffset: 1 },
+        { x: 250, y: 510, row: 1, colOffset: -0.6 },
+        { x: 460, y: 510, row: 1, colOffset: 0.6 },
+      ],
+      circleR: 42,
+      textWidth: 185,
+      fontSize: 13,
+      posFontSize: 9.5,
+    },
+  };
+
   const count = Math.min(Math.max(speakers.length, 1), 5);
-  const layout = speakerLayouts[count];
-  const speakerY = 405;
+  const isGridLayout = count > 2 && speakerLayoutMode === 'grid';
+  const layout = isGridLayout ? gridSpeakerLayouts[count] : rowSpeakerLayouts[count];
 
   return (
     <div className="w-full aspect-video bg-slate-200 rounded-xl overflow-hidden shadow-2xl border border-slate-300 relative group">
@@ -279,12 +323,38 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {speakers.length > 0 ? (
           speakers.slice(0, 5).map((speaker, i) => {
             const pos = layout.positions[i];
-            const currentX = pos.x + speakerXOffset + (count === 1 ? 0 : i * speakerSpacingOffset);
-            const currentY = pos.y + speakerYOffset;
+            const currentX =
+              pos.x +
+              speakerXOffset +
+              (isGridLayout
+                ? (pos.colOffset ?? 0) * speakerSpacingOffset
+                : count === 1
+                ? 0
+                : i * speakerSpacingOffset);
+            const currentY =
+              pos.y +
+              speakerYOffset +
+              (isGridLayout && pos.row === 1 ? speakerRowSpacingOffset : 0);
             const r = layout.circleR;
-            const textX = (count === 1 ? currentX + r + 30 : currentX - r) + speakerTextOffset;
-            const nameY = (count === 1 ? currentY - 5 : currentY + r + 28) + speakerTextYOffset;
-            const posY = (count === 1 ? currentY + 35 : currentY + r + 58) + speakerTextYOffset;
+            const textX =
+              (count === 1
+                ? currentX + r + 30
+                : isGridLayout
+                ? currentX
+                : currentX - r) + speakerTextOffset;
+            const nameY =
+              (count === 1
+                ? currentY - 5
+                : isGridLayout
+                ? currentY + r + 18
+                : currentY + r + 28) + speakerTextYOffset;
+            const posY =
+              (count === 1
+                ? currentY + 35
+                : isGridLayout
+                ? currentY + r + 35
+                : currentY + r + 58) + speakerTextYOffset;
+            const anchor = isGridLayout ? 'middle' : 'start';
             return (
               <g key={i}>
                 <defs>
@@ -321,7 +391,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
                   fontWeight="700"
-                  textAnchor="start"
+                  textAnchor={anchor}
                 >
                   {speaker.name}
                 </text>
@@ -334,9 +404,9 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.posFontSize}
                   fontWeight="500"
-                  textAnchor="start"
+                  textAnchor={anchor}
                 >
-                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 4).map((line, li) => (
+                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, isGridLayout ? 2 : 4).map((line, li) => (
                     <tspan key={li} x={textX} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
                   ))}
                 </text>

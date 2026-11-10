@@ -57,6 +57,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     speakerYOffset = 0,
     speakerTextOffset = 0,
     speakerTextYOffset = 0,
+    speakerLayoutMode = 'grid',
+    speakerRowSpacingOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
@@ -108,24 +110,31 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     progY = Math.round((programLogoPosition === 'left' ? 100 : 95) - progH / 2);
   }
 
-  // Speaker layout configurations for 1080 x 1350 (4:5)
-  const speakerLayouts: Record<number, any> = {
+  // Single-row speaker layouts for 1080 x 1350 (4:5)
+  const rowSpeakerLayouts: Record<number, any> = {
     1: {
-      positions: [{ x: 185, y: 700 }],
+      positions: [{ x: 185, y: 700, row: 0, colOffset: 0 }],
       circleR: 115,
       textWidth: 660,
       fontSize: 32,
       posFontSize: 20,
     },
     2: {
-      positions: [{ x: 310, y: 710 }, { x: 770, y: 710 }],
+      positions: [
+        { x: 310, y: 710, row: 0, colOffset: -1 },
+        { x: 770, y: 710, row: 0, colOffset: 1 },
+      ],
       circleR: 115,
       textWidth: 380,
       fontSize: 24,
       posFontSize: 16,
     },
     3: {
-      positions: [{ x: 190, y: 720 }, { x: 540, y: 720 }, { x: 890, y: 720 }],
+      positions: [
+        { x: 190, y: 720, row: 0, colOffset: -1 },
+        { x: 540, y: 720, row: 0, colOffset: 0 },
+        { x: 890, y: 720, row: 0, colOffset: 1 },
+      ],
       circleR: 90,
       textWidth: 280,
       fontSize: 19,
@@ -133,10 +142,50 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     },
     4: {
       positions: [
-        { x: 320, y: 640 },
-        { x: 760, y: 640 },
-        { x: 320, y: 920 },
-        { x: 760, y: 920 },
+        { x: 150, y: 720, row: 0, colOffset: -1.5 },
+        { x: 410, y: 720, row: 0, colOffset: -0.5 },
+        { x: 670, y: 720, row: 0, colOffset: 0.5 },
+        { x: 930, y: 720, row: 0, colOffset: 1.5 },
+      ],
+      circleR: 72,
+      textWidth: 220,
+      fontSize: 16,
+      posFontSize: 11.5,
+    },
+    5: {
+      positions: [
+        { x: 130, y: 720, row: 0, colOffset: -2 },
+        { x: 335, y: 720, row: 0, colOffset: -1 },
+        { x: 540, y: 720, row: 0, colOffset: 0 },
+        { x: 745, y: 720, row: 0, colOffset: 1 },
+        { x: 950, y: 720, row: 0, colOffset: 2 },
+      ],
+      circleR: 58,
+      textWidth: 180,
+      fontSize: 14,
+      posFontSize: 10,
+    },
+  };
+
+  // 2-row Grid speaker layouts for 3, 4, and 5 speakers on 1080 x 1350 (4:5)
+  const gridSpeakerLayouts: Record<number, any> = {
+    3: {
+      positions: [
+        { x: 320, y: 640, row: 0, colOffset: -1 },
+        { x: 760, y: 640, row: 0, colOffset: 1 },
+        { x: 540, y: 920, row: 1, colOffset: 0 },
+      ],
+      circleR: 85,
+      textWidth: 360,
+      fontSize: 20,
+      posFontSize: 14,
+    },
+    4: {
+      positions: [
+        { x: 320, y: 640, row: 0, colOffset: -1 },
+        { x: 760, y: 640, row: 0, colOffset: 1 },
+        { x: 320, y: 920, row: 1, colOffset: -1 },
+        { x: 760, y: 920, row: 1, colOffset: 1 },
       ],
       circleR: 80,
       textWidth: 380,
@@ -145,11 +194,11 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     },
     5: {
       positions: [
-        { x: 200, y: 640 },
-        { x: 540, y: 640 },
-        { x: 880, y: 640 },
-        { x: 360, y: 920 },
-        { x: 720, y: 920 },
+        { x: 200, y: 640, row: 0, colOffset: -1 },
+        { x: 540, y: 640, row: 0, colOffset: 0 },
+        { x: 880, y: 640, row: 0, colOffset: 1 },
+        { x: 360, y: 920, row: 1, colOffset: -1 },
+        { x: 720, y: 920, row: 1, colOffset: 1 },
       ],
       circleR: 72,
       textWidth: 280,
@@ -159,7 +208,8 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
   };
 
   const count = Math.min(Math.max(speakers.length, 1), 5);
-  const layout = speakerLayouts[count];
+  const isGridLayout = count > 2 && speakerLayoutMode === 'grid';
+  const layout = isGridLayout ? gridSpeakerLayouts[count] : rowSpeakerLayouts[count];
 
   return (
     <div className="w-full max-w-[480px] mx-auto aspect-[4/5] bg-slate-200 rounded-2xl overflow-hidden shadow-2xl border border-slate-300 relative group">
@@ -294,26 +344,11 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
             const pos = layout.positions[i];
             const r = layout.circleR;
 
-            // Calculate responsive spacing offsets
-            let xOffset = 0;
-            if (count === 1) {
-              xOffset = 0;
-            } else if (count === 2) {
-              xOffset = (i === 0 ? -1 : 1) * speakerSpacingOffset;
-            } else if (count === 3) {
-              xOffset = (i - 1) * speakerSpacingOffset;
-            } else if (count === 4) {
-              xOffset = (i % 2 === 0 ? -1 : 1) * speakerSpacingOffset;
-            } else if (count === 5) {
-              if (i < 3) {
-                xOffset = (i === 0 ? -1 : i === 2 ? 1 : 0) * speakerSpacingOffset;
-              } else {
-                xOffset = (i === 3 ? -1 : 1) * speakerSpacingOffset;
-              }
-            }
+            const xOffset = (pos.colOffset ?? 0) * speakerSpacingOffset;
+            const yRowOffset = isGridLayout && pos.row === 1 ? speakerRowSpacingOffset : 0;
 
             const currentX = pos.x + speakerXOffset + xOffset;
-            const currentY = pos.y + speakerYOffset;
+            const currentY = pos.y + speakerYOffset + yRowOffset;
             const textX = (count === 1 ? currentX + r + 35 : currentX) + speakerTextOffset;
             const nameY = (count === 1 ? currentY - 6 : currentY + r + 28) + speakerTextYOffset;
             const posY =

@@ -70,6 +70,8 @@ export interface FormatStyleConfig {
   speakerYOffset: number;
   speakerTextOffset: number;
   speakerTextYOffset: number;
+  speakerLayoutMode: 'row' | 'grid';
+  speakerRowSpacingOffset: number;
   eventInfoYOffset: number;
   eventInfoXSpacing: number;
 }
@@ -196,6 +198,8 @@ const createDefaultFormatStyle = (): FormatStyleConfig => {
     speakerYOffset: 0,
     speakerTextOffset: 0,
     speakerTextYOffset: 0,
+    speakerLayoutMode: 'row',
+    speakerRowSpacingOffset: 0,
     eventInfoYOffset: 0,
     eventInfoXSpacing: 0,
   };
@@ -227,6 +231,14 @@ const extractFormatStyleFromObject = (raw: any, fallback: FormatStyleConfig): Fo
     speakerYOffset: raw.speakerYOffset !== undefined ? Number(raw.speakerYOffset) : fallback.speakerYOffset,
     speakerTextOffset: raw.speakerTextOffset !== undefined ? Number(raw.speakerTextOffset) : fallback.speakerTextOffset,
     speakerTextYOffset: raw.speakerTextYOffset !== undefined ? Number(raw.speakerTextYOffset) : fallback.speakerTextYOffset,
+    speakerLayoutMode:
+      raw.speakerLayoutMode === 'grid' || raw.speakerLayoutMode === 'row'
+        ? raw.speakerLayoutMode
+        : fallback.speakerLayoutMode,
+    speakerRowSpacingOffset:
+      raw.speakerRowSpacingOffset !== undefined
+        ? Number(raw.speakerRowSpacingOffset)
+        : fallback.speakerRowSpacingOffset,
     eventInfoYOffset: raw.eventInfoYOffset !== undefined ? Number(raw.eventInfoYOffset) : fallback.eventInfoYOffset,
     eventInfoXSpacing: raw.eventInfoXSpacing !== undefined ? Number(raw.eventInfoXSpacing) : fallback.eventInfoXSpacing,
   };
@@ -1341,6 +1353,7 @@ export default function GeneratorPage() {
                             {(activeStyle.speakerXOffset !== 0 ||
                               activeStyle.speakerYOffset !== 0 ||
                               activeStyle.speakerSpacingOffset !== 0 ||
+                              activeStyle.speakerRowSpacingOffset !== 0 ||
                               activeStyle.speakerTextOffset !== 0 ||
                               activeStyle.speakerTextYOffset !== 0) && (
                               <button
@@ -1350,6 +1363,7 @@ export default function GeneratorPage() {
                                     speakerXOffset: 0,
                                     speakerYOffset: 0,
                                     speakerSpacingOffset: 0,
+                                    speakerRowSpacingOffset: 0,
                                     speakerTextOffset: 0,
                                     speakerTextYOffset: 0,
                                   })
@@ -1361,6 +1375,45 @@ export default function GeneratorPage() {
                             )}
                           </div>
                         </div>
+
+                        {/* Mode Susunan Foto (Baris Sejajar vs Mode Grid) saat Narasumber > 2 */}
+                        {speakerCount > 2 && (
+                          <div className="p-2.5 bg-white border border-orange-200/80 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                                <Layout size={12} className="text-orange-500" />
+                                Mode Susunan Foto ({speakerCount} Narasumber)
+                              </span>
+                              <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
+                                {activeStyle.speakerLayoutMode === 'grid' ? 'Mode Grid (2 Baris)' : 'Baris Sejajar'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => updateStyle({ speakerLayoutMode: 'row' })}
+                                className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                                  activeStyle.speakerLayoutMode !== 'grid'
+                                    ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
+                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                <span>↔️ Baris Sejajar (1 Baris)</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateStyle({ speakerLayoutMode: 'grid' })}
+                                className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                                  activeStyle.speakerLayoutMode === 'grid'
+                                    ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
+                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                }`}
+                              >
+                                <span>⊞ Mode Grid (2 Baris)</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Lokasi Foto Kiri / Kanan */}
@@ -1443,22 +1496,44 @@ export default function GeneratorPage() {
                         </div>
 
                         {speakerCount > 1 && (
-                          <div className="space-y-1 pt-1.5 border-t border-slate-200/60">
-                            <div className="flex items-center justify-between text-[11px] text-slate-600">
-                              <span>↔️ Jarak Antar Foto Pembicara</span>
-                              <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
-                                {activeStyle.speakerSpacingOffset > 0 ? `+${activeStyle.speakerSpacingOffset}` : activeStyle.speakerSpacingOffset} px
-                              </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1.5 border-t border-slate-200/60">
+                            <div className={`space-y-1 ${speakerCount > 2 && activeStyle.speakerLayoutMode === 'grid' ? '' : 'sm:col-span-2'}`}>
+                              <div className="flex items-center justify-between text-[11px] text-slate-600">
+                                <span>↔️ Jarak Antar Kolom Foto</span>
+                                <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                                  {activeStyle.speakerSpacingOffset > 0 ? `+${activeStyle.speakerSpacingOffset}` : activeStyle.speakerSpacingOffset} px
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min="-100"
+                                max="150"
+                                step="5"
+                                value={activeStyle.speakerSpacingOffset}
+                                onChange={(e) => updateStyle({ speakerSpacingOffset: Number(e.target.value) })}
+                                className="w-full accent-orange-500 cursor-pointer"
+                              />
                             </div>
-                            <input
-                              type="range"
-                              min="-100"
-                              max="150"
-                              step="5"
-                              value={activeStyle.speakerSpacingOffset}
-                              onChange={(e) => updateStyle({ speakerSpacingOffset: Number(e.target.value) })}
-                              className="w-full accent-orange-500 cursor-pointer"
-                            />
+
+                            {speakerCount > 2 && activeStyle.speakerLayoutMode === 'grid' && (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px] text-slate-600">
+                                  <span>↕️ Jarak Antar Baris Grid</span>
+                                  <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                                    {activeStyle.speakerRowSpacingOffset > 0 ? `+${activeStyle.speakerRowSpacingOffset}` : activeStyle.speakerRowSpacingOffset} px
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="-100"
+                                  max="150"
+                                  step="5"
+                                  value={activeStyle.speakerRowSpacingOffset}
+                                  onChange={(e) => updateStyle({ speakerRowSpacingOffset: Number(e.target.value) })}
+                                  className="w-full accent-orange-500 cursor-pointer"
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2058,6 +2133,7 @@ export default function GeneratorPage() {
                         <span className="text-xs font-bold text-slate-700">Lokasi Foto & Jarak Teks Narasumber</span>
                         {(activeStyle.speakerXOffset !== 0 ||
                           activeStyle.speakerSpacingOffset !== 0 ||
+                          activeStyle.speakerRowSpacingOffset !== 0 ||
                           activeStyle.speakerYOffset !== 0 ||
                           activeStyle.speakerTextOffset !== 0 ||
                           activeStyle.speakerTextYOffset !== 0) && (
@@ -2067,6 +2143,7 @@ export default function GeneratorPage() {
                               updateStyle({
                                 speakerXOffset: 0,
                                 speakerSpacingOffset: 0,
+                                speakerRowSpacingOffset: 0,
                                 speakerYOffset: 0,
                                 speakerTextOffset: 0,
                                 speakerTextYOffset: 0,
@@ -2078,6 +2155,44 @@ export default function GeneratorPage() {
                           </button>
                         )}
                       </div>
+
+                      {speakerCount > 2 && (
+                        <div className="p-2.5 bg-white border border-orange-200/80 rounded-xl space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                              <Layout size={12} className="text-orange-500" />
+                              Mode Susunan Foto ({speakerCount} Narasumber)
+                            </span>
+                            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">
+                              {activeStyle.speakerLayoutMode === 'grid' ? 'Mode Grid (2 Baris)' : 'Baris Sejajar'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => updateStyle({ speakerLayoutMode: 'row' })}
+                              className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                                activeStyle.speakerLayoutMode !== 'grid'
+                                  ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span>↔️ Baris Sejajar (1 Baris)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateStyle({ speakerLayoutMode: 'grid' })}
+                              className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all border flex items-center justify-center gap-1.5 ${
+                                activeStyle.speakerLayoutMode === 'grid'
+                                  ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span>⊞ Mode Grid (2 Baris)</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
@@ -2157,22 +2272,44 @@ export default function GeneratorPage() {
                       </div>
 
                       {speakerCount > 1 && (
-                        <div className="space-y-1 pt-2 border-t border-slate-200/60">
-                          <div className="flex items-center justify-between text-[11px] text-slate-600">
-                            <span>↔️ Jarak Antar Foto Pembicara</span>
-                            <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
-                              {activeStyle.speakerSpacingOffset > 0 ? `+${activeStyle.speakerSpacingOffset}` : activeStyle.speakerSpacingOffset} px
-                            </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
+                          <div className={`space-y-1 ${speakerCount > 2 && activeStyle.speakerLayoutMode === 'grid' ? '' : 'sm:col-span-2'}`}>
+                            <div className="flex items-center justify-between text-[11px] text-slate-600">
+                              <span>↔️ Jarak Antar Kolom Foto</span>
+                              <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                                {activeStyle.speakerSpacingOffset > 0 ? `+${activeStyle.speakerSpacingOffset}` : activeStyle.speakerSpacingOffset} px
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="-100"
+                              max="150"
+                              step="5"
+                              value={activeStyle.speakerSpacingOffset}
+                              onChange={(e) => updateStyle({ speakerSpacingOffset: Number(e.target.value) })}
+                              className="w-full accent-orange-500 cursor-pointer"
+                            />
                           </div>
-                          <input
-                            type="range"
-                            min="-100"
-                            max="150"
-                            step="5"
-                            value={activeStyle.speakerSpacingOffset}
-                            onChange={(e) => updateStyle({ speakerSpacingOffset: Number(e.target.value) })}
-                            className="w-full accent-orange-500 cursor-pointer"
-                          />
+
+                          {speakerCount > 2 && activeStyle.speakerLayoutMode === 'grid' && (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px] text-slate-600">
+                                <span>↕️ Jarak Antar Baris Grid</span>
+                                <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                                  {activeStyle.speakerRowSpacingOffset > 0 ? `+${activeStyle.speakerRowSpacingOffset}` : activeStyle.speakerRowSpacingOffset} px
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min="-100"
+                                max="150"
+                                step="5"
+                                value={activeStyle.speakerRowSpacingOffset}
+                                onChange={(e) => updateStyle({ speakerRowSpacingOffset: Number(e.target.value) })}
+                                className="w-full accent-orange-500 cursor-pointer"
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
