@@ -680,8 +680,26 @@ export default function GeneratorPage() {
     setIsUploadingPortraitBg(true);
     try {
       const fileName = `portrait-bg-${Date.now()}`;
-      const { publicUrl } = await uploadFile('presenters', fileName, file);
+      const { publicUrl, storagePath } = await uploadFile('presenters', fileName, file);
       setCustomPortraitBg(publicUrl);
+
+      // Also persist to the selected presenter record if one is selected
+      if (selectedPresenterId) {
+        await (supabase.from('presenters') as any)
+          .update({
+            background_portrait_url: publicUrl,
+            background_portrait_path: storagePath,
+          })
+          .eq('id', selectedPresenterId);
+
+        setAllPresenters((prev) =>
+          prev.map((p) =>
+            p.id === selectedPresenterId
+              ? { ...p, background_portrait_url: publicUrl, background_portrait_path: storagePath }
+              : p
+          )
+        );
+      }
     } catch (err) {
       console.warn('Storage upload note:', err);
     } finally {
@@ -1338,31 +1356,35 @@ export default function GeneratorPage() {
                           <Smartphone size={13} className="text-orange-500" />
                           Background 4:5 — Poster Portrait (1080×1350)
                         </label>
-                        {portraitBgUrl && (
+                        {customPortraitBg && (
                           <button
                             type="button"
                             onClick={() => setCustomPortraitBg(null)}
                             className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
                           >
-                            Gunakan Hitam Polos
+                            Reset ke BG Presenter
                           </button>
                         )}
                       </div>
 
                       <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                        <div className="w-14 aspect-[4/5] rounded-lg overflow-hidden border border-slate-300 bg-black shrink-0 flex items-center justify-center">
+                        <div className="w-14 aspect-[4/5] rounded-lg overflow-hidden border border-slate-300 bg-slate-200 shrink-0 flex items-center justify-center">
                           {portraitBgUrl ? (
                             <img src={portraitBgUrl} alt="BG 4:5" className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-[9px] font-bold text-slate-400 text-center px-1">HITAM</span>
+                            <ImageIcon size={16} className="text-slate-400" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0 space-y-1.5">
                           <p className="text-xs font-bold text-slate-700">
-                            {portraitBgUrl ? 'Background Portrait Aktif' : 'Mode Hitam Polos (Default)'}
+                            {customPortraitBg
+                              ? 'Background Custom 4:5 Aktif'
+                              : selectedPresenter?.background_portrait_url
+                              ? `Background 4:5 Presenter (${selectedPresenter.name})`
+                              : 'Belum Ada Background 4:5'}
                           </p>
                           <p className="text-[10px] text-slate-500 leading-snug">
-                            Upload gambar 1080×1350 khusus untuk tampilan 4:5. Ikut tersimpan saat Anda klik Simpan Default.
+                            Pilih presenter di atas atau upload gambar 1080×1350 khusus untuk tampilan 4:5.
                           </p>
                           <div className="flex items-center gap-2 pt-0.5">
                             <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 transition-all">

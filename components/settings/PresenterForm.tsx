@@ -152,7 +152,7 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-700">Background Poster Portrait (1080x1350) <span className="text-xs text-slate-400 font-normal">(Opsional)</span></label>
+          <label className="text-sm font-medium text-slate-700">Background Poster Portrait (1080x1350)</label>
           {bgPortraitUrl && (
             <button
               type="button"
@@ -162,7 +162,7 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
               }}
               className="text-xs text-red-500 hover:text-red-700 font-bold"
             >
-              Hapus (Hitam Polos)
+              Hapus Gambar
             </button>
           )}
         </div>
@@ -170,10 +170,9 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
           {bgPortraitUrl ? (
             <img src={bgPortraitUrl} alt="Portrait Preview" className="w-full h-full object-cover" />
           ) : (
-            <div className="text-slate-500 flex flex-col items-center gap-1.5 p-4 text-center">
-              <div className="w-6 h-6 rounded-full bg-black border border-slate-300" />
-              <span className="text-xs font-semibold text-slate-700">Hitam Polos</span>
-              <span className="text-[10px] text-slate-400">Jika tidak diisi, poster otomatis hitam polos</span>
+            <div className="text-slate-500 flex flex-col items-center gap-2 p-4 text-center">
+              <ImageIcon size={32} />
+              <span className="text-xs font-medium uppercase tracking-wider">No Background (4:5)</span>
             </div>
           )}
           
@@ -192,7 +191,7 @@ export function PresenterForm({ initialData, dialogs, onSubmit, onCancel }: Pres
           </div>
         </div>
         <p className="text-[10px] text-slate-500 italic text-center">
-          Rekomendasi: PNG/JPG 1080×1350 (4:5). Jika kosong, poster siaran akan hitam polos.
+          Rekomendasi: PNG/JPG 1080×1350 untuk Poster Siaran (4:5).
         </p>
       </div>
 

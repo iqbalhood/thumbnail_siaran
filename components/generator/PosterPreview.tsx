@@ -168,18 +168,6 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         className="w-full h-full"
       >
         <defs>
-          {/* Subtle gradient to keep header text always sharp */}
-          <linearGradient id={`${id}-header-grad`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#060f2c" stopOpacity="0.88" />
-            <stop offset="65%" stopColor="#060f2c" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#060f2c" stopOpacity="0" />
-          </linearGradient>
-          {/* Subtle gradient for bottom text & footer */}
-          <linearGradient id={`${id}-footer-grad`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#060f2c" stopOpacity="0" />
-            <stop offset="45%" stopColor="#060f2c" stopOpacity="0.75" />
-            <stop offset="100%" stopColor="#060f2c" stopOpacity="0.95" />
-          </linearGradient>
           <linearGradient id={`${id}-ring-grad`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#60a5fa" />
             <stop offset="100%" stopColor="#1e40af" />
@@ -188,15 +176,9 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
         {/* 1. Background Layer */}
         {presenterBgUrl ? (
-          <>
-            <image href={presenterBgUrl} width="1080" height="1350" preserveAspectRatio="xMidYMid slice" />
-            {/* Overlays for enhanced readability on uploaded portrait backgrounds */}
-            <rect width="1080" height="520" fill={`url(#${id}-header-grad)`} />
-            <rect y="740" width="1080" height="610" fill={`url(#${id}-footer-grad)`} />
-          </>
+          <image href={presenterBgUrl} width="1080" height="1350" preserveAspectRatio="xMidYMid slice" />
         ) : (
-          /* Jika background belum di-upload, gunakan warna hitam polos */
-          <rect width="1080" height="1350" fill="#000000" />
+          <rect width="1080" height="1350" fill="#060f2c" />
         )}
 
         {/* 2. Logo RRI */}

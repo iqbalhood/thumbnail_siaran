@@ -9,6 +9,8 @@ interface PresenterCardProps {
     name: string;
     background_url: string | null;
     background_path: string | null;
+    background_portrait_url?: string | null;
+    background_portrait_path?: string | null;
   };
   onEdit: () => void;
   onDelete: () => void;
@@ -27,10 +29,27 @@ export function PresenterCard({ presenter, onEdit, onDelete }: PresenterCardProp
         ) : (
           <div className="text-slate-400 flex flex-col items-center gap-1">
             <ImageIcon size={24} />
-            <span className="text-[10px] uppercase font-bold tracking-widest">No Background</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest">No 16:9 BG</span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+        <div className="absolute top-2 right-2 flex items-center gap-1">
+          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+            presenter.background_url ? 'bg-emerald-500/90 text-white' : 'bg-slate-800/75 text-slate-300'
+          }`}>
+            16:9
+          </span>
+          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+            presenter.background_portrait_url ? 'bg-emerald-500/90 text-white' : 'bg-slate-800/75 text-slate-300'
+          }`}>
+            4:5
+          </span>
+        </div>
+        {presenter.background_portrait_url && (
+          <div className="absolute bottom-2 right-2 w-8 aspect-[4/5] rounded border border-white/80 overflow-hidden shadow-md bg-slate-900">
+            <img src={presenter.background_portrait_url} alt="4:5" className="w-full h-full object-cover" />
+          </div>
+        )}
         <div className="absolute bottom-3 left-3">
           <h4 className="text-white font-bold text-sm drop-shadow-md">{presenter.name}</h4>
         </div>
