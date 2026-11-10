@@ -67,6 +67,7 @@ export interface FormatStyleConfig {
   titleYOffset: number;
   speakerSpacingOffset: number;
   speakerYOffset: number;
+  speakerTextOffset: number;
   eventInfoYOffset: number;
   eventInfoXSpacing: number;
 }
@@ -190,6 +191,7 @@ const createDefaultFormatStyle = (): FormatStyleConfig => {
     titleYOffset: 0,
     speakerSpacingOffset: 0,
     speakerYOffset: 0,
+    speakerTextOffset: 0,
     eventInfoYOffset: 0,
     eventInfoXSpacing: 0,
   };
@@ -218,6 +220,7 @@ const extractFormatStyleFromObject = (raw: any, fallback: FormatStyleConfig): Fo
     titleYOffset: raw.titleYOffset !== undefined ? Number(raw.titleYOffset) : fallback.titleYOffset,
     speakerSpacingOffset: raw.speakerSpacingOffset !== undefined ? Number(raw.speakerSpacingOffset) : fallback.speakerSpacingOffset,
     speakerYOffset: raw.speakerYOffset !== undefined ? Number(raw.speakerYOffset) : fallback.speakerYOffset,
+    speakerTextOffset: raw.speakerTextOffset !== undefined ? Number(raw.speakerTextOffset) : fallback.speakerTextOffset,
     eventInfoYOffset: raw.eventInfoYOffset !== undefined ? Number(raw.eventInfoYOffset) : fallback.eventInfoYOffset,
     eventInfoXSpacing: raw.eventInfoXSpacing !== undefined ? Number(raw.eventInfoXSpacing) : fallback.eventInfoXSpacing,
   };
@@ -1897,16 +1900,24 @@ export default function GeneratorPage() {
                     </div>
 
                     {/* B. Posisi & Jarak Foto Pembicara */}
-                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
+                    <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700">Posisi & Jarak Foto Pembicara</span>
-                        {(activeStyle.speakerSpacingOffset !== 0 || activeStyle.speakerYOffset !== 0) && (
+                        <span className="text-xs font-bold text-slate-700">Posisi & Jarak Foto & Teks Narasumber</span>
+                        {(activeStyle.speakerSpacingOffset !== 0 ||
+                          activeStyle.speakerYOffset !== 0 ||
+                          activeStyle.speakerTextOffset !== 0) && (
                           <button
                             type="button"
-                            onClick={() => updateStyle({ speakerSpacingOffset: 0, speakerYOffset: 0 })}
+                            onClick={() =>
+                              updateStyle({
+                                speakerSpacingOffset: 0,
+                                speakerYOffset: 0,
+                                speakerTextOffset: 0,
+                              })
+                            }
                             className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
                           >
-                            Reset Foto
+                            Reset Narasumber
                           </button>
                         )}
                       </div>
@@ -1932,7 +1943,7 @@ export default function GeneratorPage() {
 
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-[11px] text-slate-600">
-                            <span>↔️ Jarak Antar Foto</span>
+                            <span>{speakerCount === 1 ? '↔️ Geser Kiri / Kanan' : '↔️ Jarak Antar Foto'}</span>
                             <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
                               {activeStyle.speakerSpacingOffset > 0 ? `+${activeStyle.speakerSpacingOffset}` : activeStyle.speakerSpacingOffset} px
                             </span>
@@ -1940,13 +1951,32 @@ export default function GeneratorPage() {
                           <input
                             type="range"
                             min="-100"
-                            max="100"
+                            max="150"
                             step="5"
                             value={activeStyle.speakerSpacingOffset}
                             onChange={(e) => updateStyle({ speakerSpacingOffset: Number(e.target.value) })}
                             className="w-full accent-orange-500 cursor-pointer"
                           />
                         </div>
+                      </div>
+
+                      {/* Jarak Antara Foto dan Teks Narasumber */}
+                      <div className="space-y-1 pt-2 border-t border-slate-200/60">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>↔️ Jarak Foto & Teks Narasumber (Nama & Jabatan)</span>
+                          <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                            {activeStyle.speakerTextOffset > 0 ? `+${activeStyle.speakerTextOffset}` : activeStyle.speakerTextOffset} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-80"
+                          max="180"
+                          step="5"
+                          value={activeStyle.speakerTextOffset}
+                          onChange={(e) => updateStyle({ speakerTextOffset: Number(e.target.value) })}
+                          className="w-full accent-orange-500 cursor-pointer"
+                        />
                       </div>
                     </div>
 

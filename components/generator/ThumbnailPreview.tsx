@@ -56,6 +56,7 @@ export interface ThumbnailData {
   hutRiLogoTheme?: 'white' | 'dark';
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
+  speakerTextOffset?: number;
   eventInfoYOffset?: number;
   eventInfoXSpacing?: number;
   phoneNumber?: string;
@@ -95,6 +96,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     showEventName = true,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
+    speakerTextOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
@@ -273,9 +275,12 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {speakers.length > 0 ? (
           speakers.slice(0, 5).map((speaker, i) => {
             const pos = layout.positions[i];
-            const currentX = pos.x + (i * speakerSpacingOffset);
+            const currentX = count === 1 ? pos.x + speakerSpacingOffset : pos.x + (i * speakerSpacingOffset);
             const currentY = pos.y + speakerYOffset;
             const r = layout.circleR;
+            const textX = count === 1 ? currentX + r + 30 + speakerTextOffset : currentX - r;
+            const nameY = count === 1 ? currentY - 5 : currentY + r + 28 + speakerTextOffset;
+            const posY = count === 1 ? currentY + 35 : currentY + r + 58 + speakerTextOffset;
             return (
               <g key={i}>
                 <defs>
@@ -306,8 +311,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                 
                 {/* Name */}
                 <text
-                  x={count === 1 ? currentX + r + 30 : currentX - r}
-                  y={count === 1 ? currentY - 5 : currentY + r + 28}
+                  x={textX}
+                  y={nameY}
                   fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
@@ -319,8 +324,8 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                 
                 {/* Position - SVG text with manual wrap */}
                 <text
-                  x={count === 1 ? currentX + r + 30 : currentX - r}
-                  y={count === 1 ? currentY + 35 : currentY + r + 58}
+                  x={textX}
+                  y={posY}
                   fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.posFontSize}
@@ -328,7 +333,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
                   textAnchor="start"
                 >
                   {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 4).map((line, li) => (
-                    <tspan key={li} x={count === 1 ? currentX + r + 30 : currentX - r} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
+                    <tspan key={li} x={textX} dy={li === 0 ? 0 : layout.posFontSize * 1.3}>{line}</tspan>
                   ))}
                 </text>
               </g>

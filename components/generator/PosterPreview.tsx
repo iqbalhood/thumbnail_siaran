@@ -54,6 +54,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     showEventName = true,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
+    speakerTextOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
@@ -108,11 +109,11 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
   // Speaker layout configurations for 1080 x 1350 (4:5)
   const speakerLayouts: Record<number, any> = {
     1: {
-      positions: [{ x: 540, y: 700 }],
-      circleR: 140,
-      textWidth: 700,
-      fontSize: 30,
-      posFontSize: 19,
+      positions: [{ x: 185, y: 700 }],
+      circleR: 115,
+      textWidth: 660,
+      fontSize: 32,
+      posFontSize: 20,
     },
     2: {
       positions: [{ x: 310, y: 710 }, { x: 770, y: 710 }],
@@ -294,7 +295,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
             // Calculate responsive spacing offsets
             let xOffset = 0;
             if (count === 1) {
-              xOffset = 0;
+              xOffset = speakerSpacingOffset;
             } else if (count === 2) {
               xOffset = (i === 0 ? -1 : 1) * speakerSpacingOffset;
             } else if (count === 3) {
@@ -311,6 +312,13 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
             const currentX = pos.x + xOffset;
             const currentY = pos.y + speakerYOffset;
+            const textX = count === 1 ? currentX + r + 35 + speakerTextOffset : currentX;
+            const nameY = count === 1 ? currentY - 6 : currentY + r + 28 + speakerTextOffset;
+            const posY =
+              count === 1
+                ? currentY + 36
+                : currentY + r + 28 + speakerTextOffset + layout.fontSize * 1.2;
+            const anchor = count === 1 ? 'start' : 'middle';
 
             return (
               <g key={i}>
@@ -347,31 +355,31 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
 
                 {/* Speaker Name */}
                 <text
-                  x={currentX}
-                  y={currentY + r + 28}
+                  x={textX}
+                  y={nameY}
                   fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.fontSize}
                   fontWeight="700"
-                  textAnchor="middle"
+                  textAnchor={anchor}
                 >
                   {speaker.name}
                 </text>
 
                 {/* Speaker Position */}
                 <text
-                  x={currentX}
-                  y={currentY + r + 28 + (layout.fontSize * 1.2)}
+                  x={textX}
+                  y={posY}
                   fill={speakerColor}
                   fontFamily="Inter, sans-serif"
                   fontSize={layout.posFontSize}
                   fontWeight="500"
-                  textAnchor="middle"
+                  textAnchor={anchor}
                 >
-                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, 3).map((line, li) => (
+                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, count === 1 ? 4 : 3).map((line, li) => (
                     <tspan
                       key={li}
-                      x={currentX}
+                      x={textX}
                       dy={li === 0 ? 0 : layout.posFontSize * 1.3}
                     >
                       {line}
