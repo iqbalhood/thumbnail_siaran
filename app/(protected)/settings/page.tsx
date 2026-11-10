@@ -8,14 +8,18 @@ import { LogoUpload } from '@/components/settings/LogoUpload';
 import { PresenterCard } from '@/components/settings/PresenterCard';
 import { PresenterForm } from '@/components/settings/PresenterForm';
 import { DialogForm } from '@/components/settings/DialogForm';
+import { AdminEmailsManager } from '@/components/settings/AdminEmailsManager';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { RRI_SOCIAL_MEDIA_IMAGE_PATH } from '@/lib/constants/socialMedia';
-import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone, Sparkles, RotateCcw, LayoutGrid, Sun, Moon } from 'lucide-react';
+import { checkIsUserAdmin } from '@/lib/auth/admin';
+import { Loader2, Plus, Settings as SettingsIcon, ExternalLink, Info, Mic2, Edit, Trash, Phone, Sparkles, RotateCcw, LayoutGrid, Sun, Moon, ShieldCheck } from 'lucide-react';
 
 export default function SettingsPage() {
   const [branding, setBranding] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [presenters, setPresenters] = useState<any[]>([]);
   const [dialogs, setDialogs] = useState<any[]>([]);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -42,6 +46,19 @@ export default function SettingsPage() {
         .single();
       setBranding(bData);
       setPhoneNumber((bData as any)?.phone_number || '0811 6881 2123');
+
+      // Check current user admin role
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user || null;
+        setCurrentUser(user);
+        const bObj = bData as any;
+        const customAdmins =
+          bObj?.admin_emails || bObj?.thumbnail_settings?.admin_emails || [];
+        setIsAdmin(checkIsUserAdmin(user, customAdmins));
+      } catch (authErr) {
+        console.warn('Auth check error:', authErr);
+      }
 
       // Fetch presenters
       const { data: pData } = await supabase
@@ -962,7 +979,26 @@ export default function SettingsPage() {
         )}
       </section>
 
-      {/* E. Admin Accounts Info */}
+      {/* E. Panel Administrator — Kelola Email Admin */}
+      <AdminEmailsManager
+        branding={branding}
+        currentUser={currentUser}
+        onUpdated={(updatedEmails) => {
+          setBranding((prev: any) => ({
+            ...prev,
+            admin_emails: updatedEmails,
+            thumbnail_settings: {
+              ...(prev?.thumbnail_settings || {}),
+              admin_emails: updatedEmails,
+            },
+          }));
+          if (currentUser) {
+            setIsAdmin(checkIsUserAdmin(currentUser, updatedEmails));
+          }
+        }}
+      />
+
+      {/* F. Admin Accounts Info (Supabase Auth Info) */}
       <section className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <SettingsIcon size={120} />

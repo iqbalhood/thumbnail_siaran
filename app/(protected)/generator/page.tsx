@@ -45,6 +45,7 @@ import {
 
 import { exportToPng } from '@/lib/utils/export';
 import { uploadFile } from '@/lib/storage/upload';
+import { checkIsUserAdmin } from '@/lib/auth/admin';
 
 export interface FormatStyleConfig {
   showRriLogo: boolean;
@@ -157,25 +158,6 @@ const COLOR_PRESETS = [
   { name: 'Hijau', hex: '#34D399' },
   { name: 'Merah', hex: '#F87171' },
 ];
-
-const ADMIN_EMAILS = [
-  'iqbalrri25@gmail.com',
-];
-
-const checkIsUserAdmin = (user: any): boolean => {
-  if (!user) return false;
-  const email = (user.email || '').toLowerCase().trim();
-  const userMeta = (user.user_metadata || {}) as any;
-  const appMeta = (user.app_metadata || {}) as any;
-  
-  return (
-    ADMIN_EMAILS.includes(email) ||
-    email.includes('admin') ||
-    userMeta.role === 'admin' ||
-    appMeta.role === 'admin' ||
-    userMeta.is_admin === true
-  );
-};
 
 const createDefaultFormatStyle = (): FormatStyleConfig => {
   const isAug = new Date().toLocaleDateString('id-ID', { month: 'long' }).toUpperCase().includes('AGUSTUS');
@@ -471,7 +453,10 @@ export default function GeneratorPage() {
         const { data: authData } = await supabase.auth.getUser();
         const user = authData?.user || null;
         setCurrentUser(user);
-        setIsAdmin(checkIsUserAdmin(user));
+        const bObj = bRes.data as any;
+        const customAdmins =
+          bObj?.admin_emails || bObj?.thumbnail_settings?.admin_emails || [];
+        setIsAdmin(checkIsUserAdmin(user, customAdmins));
       } catch (authErr) {
         console.warn('Auth user fetch note:', authErr);
       }
