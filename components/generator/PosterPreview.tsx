@@ -52,9 +52,11 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     titleXOffset = 0,
     titleYOffset = 0,
     showEventName = true,
+    speakerXOffset = 0,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     speakerTextOffset = 0,
+    speakerTextYOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
@@ -295,7 +297,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
             // Calculate responsive spacing offsets
             let xOffset = 0;
             if (count === 1) {
-              xOffset = speakerSpacingOffset;
+              xOffset = 0;
             } else if (count === 2) {
               xOffset = (i === 0 ? -1 : 1) * speakerSpacingOffset;
             } else if (count === 3) {
@@ -310,14 +312,14 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
               }
             }
 
-            const currentX = pos.x + xOffset;
+            const currentX = pos.x + speakerXOffset + xOffset;
             const currentY = pos.y + speakerYOffset;
-            const textX = count === 1 ? currentX + r + 35 + speakerTextOffset : currentX;
-            const nameY = count === 1 ? currentY - 6 : currentY + r + 28 + speakerTextOffset;
+            const textX = (count === 1 ? currentX + r + 35 : currentX) + speakerTextOffset;
+            const nameY = (count === 1 ? currentY - 6 : currentY + r + 28) + speakerTextYOffset;
             const posY =
-              count === 1
+              (count === 1
                 ? currentY + 36
-                : currentY + r + 28 + speakerTextOffset + layout.fontSize * 1.2;
+                : currentY + r + 28 + layout.fontSize * 1.2) + speakerTextYOffset;
             const anchor = count === 1 ? 'start' : 'middle';
 
             return (

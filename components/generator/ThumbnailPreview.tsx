@@ -54,9 +54,11 @@ export interface ThumbnailData {
   rriLogoTheme?: 'white' | 'dark';
   programLogoTheme?: 'white' | 'dark';
   hutRiLogoTheme?: 'white' | 'dark';
+  speakerXOffset?: number;
   speakerSpacingOffset?: number;
   speakerYOffset?: number;
   speakerTextOffset?: number;
+  speakerTextYOffset?: number;
   eventInfoYOffset?: number;
   eventInfoXSpacing?: number;
   phoneNumber?: string;
@@ -94,9 +96,11 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     titleXOffset = 0,
     titleYOffset = 0,
     showEventName = true,
+    speakerXOffset = 0,
     speakerSpacingOffset = 0,
     speakerYOffset = 0,
     speakerTextOffset = 0,
+    speakerTextYOffset = 0,
     eventInfoYOffset = 0,
     eventInfoXSpacing = 0,
     phoneNumber = '0811 6881 2123',
@@ -275,12 +279,12 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         {speakers.length > 0 ? (
           speakers.slice(0, 5).map((speaker, i) => {
             const pos = layout.positions[i];
-            const currentX = count === 1 ? pos.x + speakerSpacingOffset : pos.x + (i * speakerSpacingOffset);
+            const currentX = pos.x + speakerXOffset + (count === 1 ? 0 : i * speakerSpacingOffset);
             const currentY = pos.y + speakerYOffset;
             const r = layout.circleR;
-            const textX = count === 1 ? currentX + r + 30 + speakerTextOffset : currentX - r;
-            const nameY = count === 1 ? currentY - 5 : currentY + r + 28 + speakerTextOffset;
-            const posY = count === 1 ? currentY + 35 : currentY + r + 58 + speakerTextOffset;
+            const textX = (count === 1 ? currentX + r + 30 : currentX - r) + speakerTextOffset;
+            const nameY = (count === 1 ? currentY - 5 : currentY + r + 28) + speakerTextYOffset;
+            const posY = (count === 1 ? currentY + 35 : currentY + r + 58) + speakerTextYOffset;
             return (
               <g key={i}>
                 <defs>
