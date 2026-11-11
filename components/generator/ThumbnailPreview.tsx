@@ -47,6 +47,7 @@ export interface ThumbnailData {
   infoColor?: string;
   speakerColor?: string;
   promoColor?: string;
+  titleScale?: number;
   titleXOffset?: number;
   titleYOffset?: number;
   showEventName?: boolean;
@@ -100,6 +101,7 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
     promoColor = '#FFFFFF',
+    titleScale = 100,
     titleXOffset = 0,
     titleYOffset = 0,
     showEventName = true,
@@ -266,19 +268,28 @@ export function ThumbnailPreview({ data, id = 'thumbnail-svg' }: ThumbnailPrevie
         )}
 
         {/* 4. Title */}
-        <text
-          x={80 + titleXOffset}
-          y={180 + titleYOffset}
-          fill={titleColor}
-          fontFamily="Space Grotesk, sans-serif"
-          fontSize="36"
-          fontWeight="700"
-          textAnchor="start"
-        >
-          {title.toUpperCase().split('\n').map((line, i) => (
-            <tspan x={80 + titleXOffset} dy={i === 0 ? 0 : 50} key={i}>{line}</tspan>
-          ))}
-        </text>
+        {(() => {
+          const baseTitleFontSize = 36;
+          const computedTitleFontSize = Math.round(baseTitleFontSize * ((titleScale || 100) / 100));
+          const computedTitleLineHeight = Math.round(computedTitleFontSize * 1.38);
+          return (
+            <text
+              x={80 + titleXOffset}
+              y={180 + titleYOffset}
+              fill={titleColor}
+              fontFamily="Space Grotesk, sans-serif"
+              fontSize={computedTitleFontSize}
+              fontWeight="700"
+              textAnchor="start"
+            >
+              {title.toUpperCase().split('\n').map((line, i) => (
+                <tspan x={80 + titleXOffset} dy={i === 0 ? 0 : computedTitleLineHeight} key={i}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          );
+        })()}
 
         {/* 5. Event Name */}
         {showEventName !== false && (

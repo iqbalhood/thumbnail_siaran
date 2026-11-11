@@ -49,6 +49,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     infoColor = '#FFFFFF',
     speakerColor = '#FFFFFF',
     promoColor = '#FFFFFF',
+    titleScale = 100,
     titleXOffset = 0,
     titleYOffset = 0,
     showEventName = true,
@@ -269,19 +270,28 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
         )}
 
         {/* 4. Title */}
-        <text
-          x={70 + titleXOffset}
-          y={225 + titleYOffset}
-          fill={titleColor}
-          fontFamily="Space Grotesk, sans-serif"
-          fontSize="42"
-          fontWeight="700"
-          textAnchor="start"
-        >
-          {title.toUpperCase().split('\n').map((line, i) => (
-            <tspan x={70 + titleXOffset} dy={i === 0 ? 0 : 56} key={i}>{line}</tspan>
-          ))}
-        </text>
+        {(() => {
+          const basePosterTitleFontSize = 42;
+          const computedTitleFontSize = Math.round(basePosterTitleFontSize * ((titleScale || 100) / 100));
+          const computedTitleLineHeight = Math.round(computedTitleFontSize * 1.33);
+          return (
+            <text
+              x={70 + titleXOffset}
+              y={225 + titleYOffset}
+              fill={titleColor}
+              fontFamily="Space Grotesk, sans-serif"
+              fontSize={computedTitleFontSize}
+              fontWeight="700"
+              textAnchor="start"
+            >
+              {title.toUpperCase().split('\n').map((line, i) => (
+                <tspan x={70 + titleXOffset} dy={i === 0 ? 0 : computedTitleLineHeight} key={i}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          );
+        })()}
 
         {/* 5. Event Name */}
         {showEventName !== false && (

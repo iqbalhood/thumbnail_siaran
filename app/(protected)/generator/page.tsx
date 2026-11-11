@@ -70,6 +70,7 @@ export interface FormatStyleConfig {
   infoColor: string;
   speakerColor: string;
   promoColor: string;
+  titleScale: number;
   titleXOffset: number;
   titleYOffset: number;
   speakerXOffset: number;
@@ -184,6 +185,7 @@ const createDefaultFormatStyle = (): FormatStyleConfig => {
     infoColor: '#FFFFFF',
     speakerColor: '#FFFFFF',
     promoColor: '#FFFFFF',
+    titleScale: 100,
     titleXOffset: 0,
     titleYOffset: 0,
     speakerXOffset: 0,
@@ -222,6 +224,7 @@ const extractFormatStyleFromObject = (raw: any, fallback: FormatStyleConfig): Fo
     infoColor: raw.infoColor || fallback.infoColor,
     speakerColor: raw.speakerColor || fallback.speakerColor,
     promoColor: raw.promoColor || fallback.promoColor,
+    titleScale: raw.titleScale !== undefined ? Number(raw.titleScale) : fallback.titleScale,
     titleXOffset: raw.titleXOffset !== undefined ? Number(raw.titleXOffset) : fallback.titleXOffset,
     titleYOffset: raw.titleYOffset !== undefined ? Number(raw.titleYOffset) : fallback.titleYOffset,
     speakerXOffset: raw.speakerXOffset !== undefined ? Number(raw.speakerXOffset) : fallback.speakerXOffset,
@@ -1394,6 +1397,87 @@ export default function GeneratorPage() {
                       />
                     </div>
 
+                    {/* Pengaturan Ukuran Teks Judul */}
+                    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Type size={13} className="text-orange-500" />
+                          Ukuran Teks Judul
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {(['both', 'youtube', 'poster'] as const).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setEditTarget(t)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                editTarget === t
+                                  ? 'bg-orange-500 text-white shadow-2xs'
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t === 'both' ? '16:9 & 4:5' : t === 'youtube' ? '16:9' : '4:5'}
+                            </button>
+                          ))}
+                          {activeStyle.titleScale !== 100 && (
+                            <button
+                              type="button"
+                              onClick={() => updateStyle({ titleScale: 100 })}
+                              className="text-[10px] font-bold text-orange-600 hover:text-orange-700 ml-1"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>Besar / Kecil Skala Judul</span>
+                          <span className="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-[10px]">
+                            {activeStyle.titleScale}% · {editTarget === 'poster' ? Math.round(42 * activeStyle.titleScale / 100) : Math.round(36 * activeStyle.titleScale / 100)} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="50"
+                          max="180"
+                          step="2"
+                          value={activeStyle.titleScale}
+                          onChange={(e) => updateStyle({ titleScale: Number(e.target.value) })}
+                          className="w-full accent-orange-500 cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[9px] text-slate-400 font-medium pt-0.5">
+                          <span>50% (Kecil)</span>
+                          <span>100% (Standar)</span>
+                          <span>180% (Besar)</span>
+                        </div>
+                      </div>
+
+                      {/* Tombol Cepat Preset Ukuran */}
+                      <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                        {[
+                          { label: 'Kecil', scale: 80 },
+                          { label: 'Normal', scale: 100 },
+                          { label: 'Besar', scale: 120 },
+                          { label: 'Ekstra', scale: 140 },
+                        ].map((preset) => (
+                          <button
+                            key={preset.scale}
+                            type="button"
+                            onClick={() => updateStyle({ titleScale: preset.scale })}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all text-center ${
+                              activeStyle.titleScale === preset.scale
+                                ? 'bg-orange-500 text-white border-orange-500 shadow-2xs'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {preset.label} ({preset.scale}%)
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Tanggal & Jam Siaran (Side-by-Side) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Tanggal */}
@@ -2435,22 +2519,41 @@ export default function GeneratorPage() {
                   <div className="p-4 space-y-4">
                     {renderFormatTargetBar()}
 
-                    {/* A. Posisi Judul */}
+                    {/* A. Posisi & Ukuran Judul */}
                     <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                           <Move size={13} className="text-orange-500" />
-                          Posisi Judul Dialog
+                          Posisi & Ukuran Judul Dialog
                         </span>
-                        {(activeStyle.titleXOffset !== 0 || activeStyle.titleYOffset !== 0) && (
+                        {(activeStyle.titleXOffset !== 0 || activeStyle.titleYOffset !== 0 || activeStyle.titleScale !== 100) && (
                           <button
                             type="button"
-                            onClick={() => updateStyle({ titleXOffset: 0, titleYOffset: 0 })}
+                            onClick={() => updateStyle({ titleXOffset: 0, titleYOffset: 0, titleScale: 100 })}
                             className="text-[10px] font-bold text-orange-600 hover:text-orange-700"
                           >
                             Reset Judul
                           </button>
                         )}
+                      </div>
+
+                      {/* Slider Ukuran Judul */}
+                      <div className="space-y-1 pb-2 border-b border-slate-200/60">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600">
+                          <span>🔍 Ukuran / Skala Teks</span>
+                          <span className="font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                            {activeStyle.titleScale}% · {editTarget === 'poster' ? Math.round(42 * activeStyle.titleScale / 100) : Math.round(36 * activeStyle.titleScale / 100)} px
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="50"
+                          max="180"
+                          step="2"
+                          value={activeStyle.titleScale}
+                          onChange={(e) => updateStyle({ titleScale: Number(e.target.value) })}
+                          className="w-full accent-orange-500 cursor-pointer"
+                        />
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

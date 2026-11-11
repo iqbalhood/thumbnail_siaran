@@ -60,3 +60,4 @@ export const filterDialogsForUser = (
   const allowedSet = new Set(permission.allowedDialogIds || []);
   return dialogs.filter((d) => allowedSet.has(d.id));
 };
+
