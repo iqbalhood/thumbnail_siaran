@@ -296,6 +296,10 @@ export default function GeneratorPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
+  // Loading state when changing dialog / loading poster & thumbnail configuration preset
+  const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
+  const [loadingDialogId, setLoadingDialogId] = useState<string | null>(null);
+
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Presenters filtered by selected dialog
@@ -410,6 +414,23 @@ export default function GeneratorPage() {
       setEndTime(saved.endTime);
       setTime(`${saved.startTime} – ${saved.endTime} WIB`);
     }
+  };
+
+  // Handler for user selecting an event / dialog with visual loading feedback
+  const handleSelectDialog = (dialogId: string, dialogName: string) => {
+    setIsLoadingConfig(true);
+    setLoadingDialogId(dialogId);
+    setSelectedDialogId(dialogId);
+    setEventName(dialogName);
+
+    // Apply the saved preset settings for both 16:9 and 4:5
+    applyDialogSettings(dialogId, dialogName);
+
+    // Smooth transition feedback to show configuration is loaded
+    setTimeout(() => {
+      setIsLoadingConfig(false);
+      setLoadingDialogId(null);
+    }, 450);
   };
 
   // When dialog changes, auto-select saved presenter or first presenter for that dialog
@@ -1088,7 +1109,13 @@ export default function GeneratorPage() {
                     Live Preview
                   </span>
                 </div>
-                <div className="rounded-xl bg-slate-100 p-1.5 flex justify-center">
+                <div className="relative rounded-xl bg-slate-100 p-1.5 flex justify-center overflow-hidden">
+                  {isLoadingConfig && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-xs z-30 flex items-center justify-center gap-1.5 animate-in fade-in duration-150">
+                      <Loader2 size={13} className="animate-spin text-orange-500" />
+                      <span className="text-[11px] font-bold text-slate-700">Memuat preset poster...</span>
+                    </div>
+                  )}
                   {mobilePreviewFormat === 'youtube' ? (
                     <div className="w-full max-w-[420px]">
                       <ThumbnailPreview data={youtubePreviewData} id="thumbnail-svg-mobile" />
@@ -1107,7 +1134,7 @@ export default function GeneratorPage() {
               {[
                 { id: 'all', label: 'Semua' },
                 { id: 'konten', label: '1. Konten' },
-                { id: 'media', label: '2. Foto/BG' },
+                { id: 'media', label: '2. Poster & Foto' },
                 { id: 'logo_warna', label: '3. Logo/Warna' },
                 { id: 'posisi', label: '4. Posisi' },
               ].map((tab) => (
@@ -1179,24 +1206,27 @@ export default function GeneratorPage() {
                         <div className="grid grid-cols-2 gap-1.5">
                           {dialogs.map((d) => {
                             const isSelected = selectedDialogId === d.id;
+                            const isLoadingThis = isLoadingConfig && loadingDialogId === d.id;
                             const savedPreset = resolveSavedDialogPreset(d.id, d.name);
                             const hasCustomPreset = Boolean(savedPreset);
                             return (
                               <button
                                 key={d.id}
                                 type="button"
-                                onClick={() => {
-                                  setSelectedDialogId(d.id);
-                                  setEventName(d.name);
-                                  applyDialogSettings(d.id, d.name);
-                                }}
-                                className={`px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all border-2 text-center flex flex-col items-center justify-center gap-0.5 ${
+                                onClick={() => handleSelectDialog(d.id, d.name)}
+                                disabled={isLoadingConfig}
+                                className={`px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all border-2 text-center flex flex-col items-center justify-center gap-0.5 relative ${
                                   isSelected
                                     ? 'border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-500/10'
                                     : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200 hover:bg-white'
                                 }`}
                               >
-                                <span className="line-clamp-1">{d.name}</span>
+                                <span className="line-clamp-1 flex items-center justify-center gap-1">
+                                  {isLoadingThis && (
+                                    <Loader2 size={11} className="animate-spin text-orange-500 shrink-0" />
+                                  )}
+                                  <span>{d.name}</span>
+                                </span>
                                 {hasCustomPreset && (
                                   <span className={`text-[9px] font-semibold tracking-normal normal-case flex items-center gap-0.5 ${
                                     isSelected ? 'text-orange-600' : 'text-emerald-600'
@@ -1216,6 +1246,50 @@ export default function GeneratorPage() {
                           placeholder="Nama acara..."
                         />
                       )}
+
+                      {/* Quick Poster Status & Shortcut to Poster Selection */}
+                      <div className="p-2.5 bg-gradient-to-r from-orange-50/70 to-amber-50/70 rounded-xl border border-orange-200/80 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-11 rounded-lg overflow-hidden border border-orange-300/80 bg-slate-200 shrink-0 flex items-center justify-center shadow-xs">
+                            {isLoadingConfig ? (
+                              <Loader2 size={15} className="animate-spin text-orange-500" />
+                            ) : portraitBgUrl ? (
+                              <img src={portraitBgUrl} alt="Poster" className="w-full h-full object-cover" />
+                            ) : (
+                              <Smartphone size={14} className="text-orange-400" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-slate-800 truncate flex items-center gap-1">
+                              <Smartphone size={12} className="text-orange-500 shrink-0" />
+                              <span>Poster 4:5:</span>
+                              {isLoadingConfig ? (
+                                <span className="text-orange-600 font-semibold text-[10px] animate-pulse">Memuat konfigurasi...</span>
+                              ) : (
+                                <span className="text-slate-600 font-normal truncate">
+                                  {customPortraitBg ? 'Background Custom' : selectedPresenter?.name ? `Presenter (${selectedPresenter.name})` : 'Belum Ada'}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              {isLoadingConfig
+                                ? 'Sedang menerapkan preset...'
+                                : `${selectedProgram} • ${customPortraitBg ? 'Poster Custom 1080×1350' : 'Format Poster Siaran'}`}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveEditorTab('media');
+                            setOpenSections((prev) => ({ ...prev, media: true }));
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-orange-500 hover:text-white text-orange-600 border border-orange-300 text-[10px] font-bold shrink-0 transition-all shadow-xs flex items-center gap-1"
+                        >
+                          <span>Pilih Poster</span>
+                          <span className="text-xs">→</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Pilih Programa */}
@@ -1333,7 +1407,7 @@ export default function GeneratorPage() {
               </div>
             )}
 
-            {/* SECTION 2: NARASUMBER & BACKGROUND (16:9 DAN 4:5) */}
+            {/* SECTION 2: POSTER, BACKGROUND & NARASUMBER */}
             {showMedia && (
               <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
                 <button
@@ -1346,7 +1420,7 @@ export default function GeneratorPage() {
                       2
                     </span>
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      Narasumber & Background (16:9 & 4:5)
+                      Poster, Background & Narasumber
                     </span>
                   </div>
                   {activeEditorTab === 'all' && (
@@ -1356,7 +1430,111 @@ export default function GeneratorPage() {
 
                 {(activeEditorTab !== 'all' || openSections.media) && (
                   <div className="p-4 space-y-5">
-                    {/* A. Pilih Narasumber (1-5) */}
+                    {/* A. Pemilihan Poster di Atas: Background 4:5 (Poster Portrait 1080x1350) */}
+                    <div className="space-y-2.5 pb-4 border-b border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <Smartphone size={14} className="text-orange-500" />
+                          Background 4:5 — Poster Portrait (1080×1350)
+                        </label>
+                        {customPortraitBg && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomPortraitBg(null)}
+                            className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            Reset ke BG Presenter
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Loading state indicator when dialog/poster preset is being loaded */}
+                      {isLoadingConfig && (
+                        <div className="p-3 bg-orange-50/80 border border-orange-200 rounded-xl flex items-center gap-2.5 text-xs font-bold text-orange-700 animate-pulse">
+                          <Loader2 size={16} className="animate-spin text-orange-500 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-orange-800">Sedang memuat konfigurasi poster...</p>
+                            <p className="text-[10px] font-normal text-orange-600">Menyesuaikan background 4:5 & template acara</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <div className="w-14 aspect-[4/5] rounded-lg overflow-hidden border border-slate-300 bg-slate-200 shrink-0 flex items-center justify-center">
+                          {portraitBgUrl ? (
+                            <img src={portraitBgUrl} alt="BG 4:5" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon size={16} className="text-slate-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <p className="text-xs font-bold text-slate-700">
+                            {customPortraitBg
+                              ? 'Background Custom 4:5 Aktif'
+                              : selectedPresenter?.background_portrait_url
+                              ? `Background 4:5 Presenter (${selectedPresenter.name})`
+                              : 'Belum Ada Background 4:5'}
+                          </p>
+                          <p className="text-[10px] text-slate-500 leading-snug">
+                            Gunakan background presenter atau upload gambar 1080×1350 khusus untuk tampilan poster 4:5.
+                          </p>
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 transition-all">
+                              {isUploadingPortraitBg ? (
+                                <Loader2 size={12} className="animate-spin text-orange-400" />
+                              ) : (
+                                <Upload size={12} className="text-orange-400" />
+                              )}
+                              <span>{portraitBgUrl ? 'Ganti Background 4:5' : 'Upload Background 4:5'}</span>
+                              <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* B. Background 16:9 (Presenter Landscape) */}
+                    <div className="space-y-2 pb-4 border-b border-slate-100">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                        <Tv size={13} className="text-orange-500" />
+                        Background 16:9 — Pilih Presenter
+                      </label>
+                      {presenters.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {presenters.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setSelectedPresenterId(p.id)}
+                              className={`p-2 rounded-xl border-2 transition-all text-left space-y-1.5 ${
+                                selectedPresenterId === p.id
+                                  ? 'border-orange-500 bg-orange-50/70'
+                                  : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'
+                              }`}
+                            >
+                              <div className="w-full aspect-video bg-slate-200 rounded-lg overflow-hidden border border-slate-200">
+                                {p.background_url ? (
+                                  <img src={p.background_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                    <ImageIcon size={16} />
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider block text-center truncate ${
+                                selectedPresenterId === p.id ? 'text-orange-700' : 'text-slate-600'
+                              }`}>
+                                {p.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">Belum ada presenter untuk acara ini.</p>
+                      )}
+                    </div>
+
+                    {/* C. Pilih Narasumber (1-5) */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
@@ -1598,99 +1776,6 @@ export default function GeneratorPage() {
                             )}
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {/* B. Background 16:9 (Presenter Landscape) */}
-                    <div className="space-y-2 pt-3 border-t border-slate-100">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                        <Tv size={13} className="text-orange-500" />
-                        Background 16:9 — Pilih Presenter
-                      </label>
-                      {presenters.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {presenters.map((p) => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => setSelectedPresenterId(p.id)}
-                              className={`p-2 rounded-xl border-2 transition-all text-left space-y-1.5 ${
-                                selectedPresenterId === p.id
-                                  ? 'border-orange-500 bg-orange-50/70'
-                                  : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'
-                              }`}
-                            >
-                              <div className="w-full aspect-video bg-slate-200 rounded-lg overflow-hidden border border-slate-200">
-                                {p.background_url ? (
-                                  <img src={p.background_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                    <ImageIcon size={16} />
-                                  </div>
-                                )}
-                              </div>
-                              <span className={`text-[10px] font-bold uppercase tracking-wider block text-center truncate ${
-                                selectedPresenterId === p.id ? 'text-orange-700' : 'text-slate-600'
-                              }`}>
-                                {p.name}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 italic">Belum ada presenter untuk acara ini.</p>
-                      )}
-                    </div>
-
-                    {/* C. Background 4:5 (Poster Portrait 1080x1350) */}
-                    <div className="space-y-2 pt-3 border-t border-slate-100">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                          <Smartphone size={13} className="text-orange-500" />
-                          Background 4:5 — Poster Portrait (1080×1350)
-                        </label>
-                        {customPortraitBg && (
-                          <button
-                            type="button"
-                            onClick={() => setCustomPortraitBg(null)}
-                            className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            Reset ke BG Presenter
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                        <div className="w-14 aspect-[4/5] rounded-lg overflow-hidden border border-slate-300 bg-slate-200 shrink-0 flex items-center justify-center">
-                          {portraitBgUrl ? (
-                            <img src={portraitBgUrl} alt="BG 4:5" className="w-full h-full object-cover" />
-                          ) : (
-                            <ImageIcon size={16} className="text-slate-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-1.5">
-                          <p className="text-xs font-bold text-slate-700">
-                            {customPortraitBg
-                              ? 'Background Custom 4:5 Aktif'
-                              : selectedPresenter?.background_portrait_url
-                              ? `Background 4:5 Presenter (${selectedPresenter.name})`
-                              : 'Belum Ada Background 4:5'}
-                          </p>
-                          <p className="text-[10px] text-slate-500 leading-snug">
-                            Pilih presenter di atas atau upload gambar 1080×1350 khusus untuk tampilan 4:5.
-                          </p>
-                          <div className="flex items-center gap-2 pt-0.5">
-                            <label className="cursor-pointer bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold inline-flex items-center gap-1.5 transition-all">
-                              {isUploadingPortraitBg ? (
-                                <Loader2 size={12} className="animate-spin text-orange-400" />
-                              ) : (
-                                <Upload size={12} className="text-orange-400" />
-                              )}
-                              <span>{portraitBgUrl ? 'Ganti Background 4:5' : 'Upload Background 4:5'}</span>
-                              <input type="file" accept="image/*" onChange={handlePortraitBgUpload} className="hidden" />
-                            </label>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -2867,12 +2952,25 @@ export default function GeneratorPage() {
             <div
               className={`${
                 previewLayout === 'side_by_side' ? 'xl:col-span-7' : 'w-full'
-              } bg-white rounded-2xl sm:rounded-3xl border-2 transition-all p-3 sm:p-4 space-y-3 shadow-lg ${
+              } bg-white rounded-2xl sm:rounded-3xl border-2 transition-all p-3 sm:p-4 space-y-3 shadow-lg relative overflow-hidden ${
                 editTarget === 'youtube'
                   ? 'border-orange-500 ring-4 ring-orange-500/10'
                   : 'border-slate-200/80'
               }`}
             >
+              {/* Loading State Overlay when Loading Configuration */}
+              {isLoadingConfig && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-xs z-30 flex flex-col items-center justify-center gap-2 transition-all animate-in fade-in duration-200">
+                  <div className="p-3.5 bg-white/95 rounded-2xl shadow-xl border border-orange-200 flex items-center gap-3">
+                    <Loader2 size={20} className="animate-spin text-orange-500 shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Memuat Konfigurasi 16:9...</p>
+                      <p className="text-[10px] text-slate-500">Menerapkan preset layout & style 16:9</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
@@ -2929,12 +3027,25 @@ export default function GeneratorPage() {
             <div
               className={`${
                 previewLayout === 'side_by_side' ? 'xl:col-span-5' : 'w-full'
-              } bg-white rounded-2xl sm:rounded-3xl border-2 transition-all p-3 sm:p-4 space-y-3 shadow-lg ${
+              } bg-white rounded-2xl sm:rounded-3xl border-2 transition-all p-3 sm:p-4 space-y-3 shadow-lg relative overflow-hidden ${
                 editTarget === 'poster'
                   ? 'border-orange-500 ring-4 ring-orange-500/10'
                   : 'border-slate-200/80'
               }`}
             >
+              {/* Loading State Overlay when Loading Configuration */}
+              {isLoadingConfig && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-xs z-30 flex flex-col items-center justify-center gap-2 transition-all animate-in fade-in duration-200">
+                  <div className="p-3.5 bg-white/95 rounded-2xl shadow-xl border border-orange-200 flex items-center gap-3">
+                    <Loader2 size={20} className="animate-spin text-orange-500 shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Memuat Konfigurasi Poster (4:5)...</p>
+                      <p className="text-[10px] text-slate-500">Menerapkan preset layout & background poster</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">

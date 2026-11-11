@@ -26,3 +26,4 @@ export const checkIsUserAdmin = (user: any, customAdminEmails: string[] = []): b
     userMeta.is_admin === true
   );
 };
+

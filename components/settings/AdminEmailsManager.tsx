@@ -276,3 +276,4 @@ export function AdminEmailsManager({ branding, currentUser, onUpdated }: AdminEm
     </section>
   );
 }
+
