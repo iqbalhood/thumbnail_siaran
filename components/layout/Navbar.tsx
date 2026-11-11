@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { LayoutGrid, Users, Settings, LogOut, Radio } from 'lucide-react';
+import { LayoutGrid, Users, Settings, LogOut, Radio, ShieldCheck } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -19,6 +19,7 @@ export default function Navbar() {
   const navItems = [
     { name: 'Generator', href: '/generator', icon: LayoutGrid },
     { name: 'Pembicara', href: '/speakers', icon: Users },
+    { name: 'User Management', shortName: 'Users', href: '/users', icon: ShieldCheck },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -49,14 +50,21 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-sm font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs md:text-sm font-semibold transition-all ${
                   isActive
                     ? 'bg-white text-orange-600 shadow-xs'
                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <Icon size={14} className="shrink-0" />
-                <span>{item.name}</span>
+                {item.shortName ? (
+                  <>
+                    <span className="hidden md:inline">{item.name}</span>
+                    <span className="md:hidden">{item.shortName}</span>
+                  </>
+                ) : (
+                  <span>{item.name}</span>
+                )}
               </Link>
             );
           })}
