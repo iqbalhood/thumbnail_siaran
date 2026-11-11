@@ -40,12 +40,18 @@ import {
   Copy,
   Layers,
   Columns2,
-  Rows2
+  Rows2,
+  Lock
 } from 'lucide-react';
 
 import { exportToPng } from '@/lib/utils/export';
 import { uploadFile } from '@/lib/storage/upload';
 import { checkIsUserAdmin } from '@/lib/auth/admin';
+import { 
+  extractUserPermissions, 
+  filterDialogsForUser, 
+  getUserDialogPermission 
+} from '@/lib/auth/permissions';
 
 export interface FormatStyleConfig {
   showRriLogo: boolean;
@@ -307,6 +313,32 @@ export default function GeneratorPage() {
     selectedDialogId ? p.dialog_id === selectedDialogId : true
   );
 
+  // User dialog permissions
+  const userPermissions = extractUserPermissions(branding);
+  const userPerm = getUserDialogPermission(currentUser, userPermissions);
+  const isRestrictedUser = !isAdmin && Boolean(userPerm && !userPerm.allowAll);
+
+  // Filter dialogs according to user's access permissions
+  const accessibleDialogs = filterDialogsForUser(
+    dialogs,
+    currentUser,
+    isAdmin,
+    userPermissions
+  );
+
+  // Ensure current selected dialog is always within accessible dialogs
+  useEffect(() => {
+    if (accessibleDialogs.length > 0) {
+      const isAccessible = accessibleDialogs.some((d) => d.id === selectedDialogId);
+      if (!isAccessible) {
+        const fallback = accessibleDialogs[0];
+        setSelectedDialogId(fallback.id);
+        setEventName(fallback.name);
+        applyDialogSettings(fallback.id, fallback.name);
+      }
+    }
+  }, [accessibleDialogs, selectedDialogId]);
+
   // Active style config displayed in the left panel controls based on editTarget
   const activeStyle: FormatStyleConfig = editTarget === 'poster' ? posterConfig : youtubeConfig;
 
@@ -469,27 +501,38 @@ export default function GeneratorPage() {
       setSpeakers(sRes.data || []);
       setBranding(bRes.data);
 
-      // Check user role
+      // Check user role & permissions
+      let fetchedUser: any = null;
+      let isFetchedAdmin = false;
       try {
         const { data: authData } = await supabase.auth.getUser();
-        const user = authData?.user || null;
-        setCurrentUser(user);
+        fetchedUser = authData?.user || null;
+        setCurrentUser(fetchedUser);
         const bObj = bRes.data as any;
         const customAdmins =
           bObj?.admin_emails || bObj?.thumbnail_settings?.admin_emails || [];
-        setIsAdmin(checkIsUserAdmin(user, customAdmins));
+        isFetchedAdmin = checkIsUserAdmin(fetchedUser, customAdmins);
+        setIsAdmin(isFetchedAdmin);
       } catch (authErr) {
         console.warn('Auth user fetch note:', authErr);
       }
+
+      const initialPermissions = extractUserPermissions(bRes.data);
+      const userAccessibleDialogs = filterDialogsForUser(
+        fetchedDialogs,
+        fetchedUser,
+        isFetchedAdmin,
+        initialPermissions
+      );
 
       // Check if URL has ?dialog=<id> query param (from Settings page)
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const requestedDialogId = urlParams?.get('dialog');
 
-      if (fetchedDialogs.length > 0) {
+      if (userAccessibleDialogs.length > 0) {
         const targetDialog =
-          (requestedDialogId && fetchedDialogs.find((d) => d.id === requestedDialogId || d.name === requestedDialogId)) ||
-          fetchedDialogs[0];
+          (requestedDialogId && userAccessibleDialogs.find((d) => d.id === requestedDialogId || d.name === requestedDialogId)) ||
+          userAccessibleDialogs[0];
         setSelectedDialogId(targetDialog.id);
         setEventName(targetDialog.name);
         applyDialogSettings(
@@ -1202,9 +1245,19 @@ export default function GeneratorPage() {
                         </button>
                       </div>
 
-                      {dialogs.length > 0 ? (
+                      {/* Restricted Dialog Access Notice */}
+                      {isRestrictedUser && (
+                        <div className="p-2 rounded-xl bg-orange-50/90 border border-orange-200/80 flex items-center gap-2 text-[11px] text-orange-800 font-semibold shadow-2xs">
+                          <Lock size={12} className="text-orange-600 shrink-0" />
+                          <span className="truncate">
+                            Akses Dibatasi: Menampilkan {accessibleDialogs.length} dialog yang diizinkan untuk akun Anda.
+                          </span>
+                        </div>
+                      )}
+
+                      {accessibleDialogs.length > 0 ? (
                         <div className="grid grid-cols-2 gap-1.5">
-                          {dialogs.map((d) => {
+                          {accessibleDialogs.map((d) => {
                             const isSelected = selectedDialogId === d.id;
                             const isLoadingThis = isLoadingConfig && loadingDialogId === d.id;
                             const savedPreset = resolveSavedDialogPreset(d.id, d.name);
@@ -1237,6 +1290,16 @@ export default function GeneratorPage() {
                               </button>
                             );
                           })}
+                        </div>
+                      ) : dialogs.length > 0 ? (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-1">
+                          <Lock size={18} className="mx-auto text-amber-600" />
+                          <p className="text-xs font-bold text-amber-900">
+                            Tidak Ada Dialog yang Diizinkan
+                          </p>
+                          <p className="text-[11px] text-amber-700">
+                            Akun Anda belum diberi izin untuk mengakses jenis dialog manapun. Hubungi Administrator untuk mengatur akses dialog Anda.
+                          </p>
                         </div>
                       ) : (
                         <Input

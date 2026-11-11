@@ -9,6 +9,7 @@ import { PresenterCard } from '@/components/settings/PresenterCard';
 import { PresenterForm } from '@/components/settings/PresenterForm';
 import { DialogForm } from '@/components/settings/DialogForm';
 import { AdminEmailsManager } from '@/components/settings/AdminEmailsManager';
+import { UserManagement } from '@/components/settings/UserManagement';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -979,7 +980,27 @@ export default function SettingsPage() {
         )}
       </section>
 
-      {/* E. Panel Administrator — Kelola Email Admin */}
+      {/* E. Panel User Management & Hak Akses Dialog */}
+      {isAdmin && (
+        <UserManagement
+          branding={branding}
+          dialogs={dialogs}
+          currentUser={currentUser}
+          adminEmails={branding?.admin_emails || branding?.thumbnail_settings?.admin_emails || []}
+          onUpdated={(updatedPermissions) => {
+            setBranding((prev: any) => ({
+              ...prev,
+              user_permissions: updatedPermissions,
+              thumbnail_settings: {
+                ...(prev?.thumbnail_settings || {}),
+                user_permissions: updatedPermissions,
+              },
+            }));
+          }}
+        />
+      )}
+
+      {/* F. Panel Administrator — Kelola Email Admin */}
       <AdminEmailsManager
         branding={branding}
         currentUser={currentUser}
@@ -998,7 +1019,7 @@ export default function SettingsPage() {
         }}
       />
 
-      {/* F. Admin Accounts Info (Supabase Auth Info) */}
+      {/* G. Admin Accounts Info (Supabase Auth Info) */}
       <section className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
           <SettingsIcon size={120} />
