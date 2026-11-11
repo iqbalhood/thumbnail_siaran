@@ -3,25 +3,26 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { UserManagement } from '@/components/settings/UserManagement';
 import { AdminEmailsManager } from '@/components/settings/AdminEmailsManager';
 import { checkIsUserAdmin } from '@/lib/auth/admin';
-import { extractUserPermissions, getUserDialogPermission } from '@/lib/auth/permissions';
+import { Button } from '@/components/ui/Button';
 import { 
-  Users, 
   ShieldCheck, 
+  ShieldAlert,
   Lock, 
-  Unlock, 
   Loader2, 
-  AlertCircle, 
-  Mic2, 
   Info, 
-  Sparkles,
-  ExternalLink
+  ExternalLink,
+  ArrowLeft,
+  LayoutGrid
 } from 'lucide-react';
 
 export default function UsersPage() {
+  const router = useRouter();
   const [branding, setBranding] = useState<any>(null);
   const [dialogs, setDialogs] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -57,14 +58,6 @@ export default function UsersPage() {
       setIsLoading(false);
     }
   };
-
-  const userPermissions = extractUserPermissions(branding);
-  const userPerm = getUserDialogPermission(currentUser, userPermissions);
-  const isAllowedAll = !userPerm || userPerm.allowAll || isAdmin;
-  const allowedDialogIds = userPerm?.allowedDialogIds || [];
-  const allowedDialogs = isAllowedAll
-    ? dialogs
-    : dialogs.filter((d) => allowedDialogIds.includes(d.id));
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
@@ -179,71 +172,35 @@ export default function UsersPage() {
           </section>
         </div>
       ) : (
-        /* Non-Admin View: Informasi Hak Akses Akun Saya */
-        <div className="space-y-6">
-          <div className="p-6 bg-white rounded-2xl border border-slate-200/80 space-y-4 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-                <Users size={20} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Hak Akses Akun Anda
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Berikut adalah daftar jenis acara/dialog siaran yang diizinkan untuk akun <strong>{currentUser?.email}</strong>.
-                </p>
-              </div>
-            </div>
+        /* Non-Admin Access Denied View */
+        <div className="max-w-xl mx-auto py-16 text-center space-y-5 bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xs">
+          <div className="w-16 h-16 rounded-3xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-200/80 shadow-md">
+            <ShieldAlert size={34} />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 uppercase tracking-wider inline-block">
+              Akses Dibatasi · 403
+            </span>
+            <h2 className="text-xl font-bold text-slate-900">
+              Halaman Khusus Administrator
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              Menu <strong>User Management</strong> hanya dapat diakses oleh akun Administrator RRI. Akun Anda (<strong>{currentUser?.email}</strong>) tidak memiliki hak akses administrator.
+            </p>
+          </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/70 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">Status Akses Dialog:</span>
-                {isAllowedAll ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                    <Unlock size={12} /> Akses Penuh ke Semua Dialog
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
-                    <Lock size={12} /> Akses Dibatasi ({allowedDialogs.length} Dialog)
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                  Dialog yang Dapat Anda Akses di Generator:
-                </span>
-                {allowedDialogs.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
-                    {allowedDialogs.map((d) => (
-                      <div
-                        key={d.id}
-                        className="p-3 bg-white rounded-xl border border-slate-200 flex items-center gap-2 text-xs font-bold text-slate-800 shadow-2xs"
-                      >
-                        <Mic2 size={14} className="text-orange-500 shrink-0" />
-                        <span className="truncate">{d.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-red-500 italic">
-                    Akun Anda belum diberi izin untuk mengakses jenis dialog manapun.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 leading-relaxed">
-              <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                Halaman pengelolaan hak akses pengguna hanya dapat diubah oleh Administrator sistem RRI. 
-                Jika Anda memerlukan akses ke dialog siaran lain, silakan hubungi tim Admin.
-              </div>
-            </div>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <Link
+              href="/generator"
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all"
+            >
+              <LayoutGrid size={15} />
+              <span>Kembali ke Generator</span>
+            </Link>
           </div>
         </div>
       )}
     </main>
   );
 }
+

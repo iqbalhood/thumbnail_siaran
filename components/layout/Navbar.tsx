@@ -1,14 +1,42 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { checkIsUserAdmin } from '@/lib/auth/admin';
 import { LayoutGrid, Users, Settings, LogOut, Radio, ShieldCheck } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const verifyAdmin = async () => {
+      try {
+        const [{ data: authData }, { data: bData }] = await Promise.all([
+          supabase.auth.getUser(),
+          supabase.from('branding_settings').select('*').single(),
+        ]);
+        const user = authData?.user || null;
+        const bObj = bData as any;
+        const customAdmins =
+          bObj?.admin_emails || bObj?.thumbnail_settings?.admin_emails || [];
+        if (isMounted) {
+          setIsAdmin(checkIsUserAdmin(user, customAdmins));
+        }
+      } catch (err) {
+        console.warn('Navbar admin check note:', err);
+      }
+    };
+    verifyAdmin();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -19,7 +47,9 @@ export default function Navbar() {
   const navItems = [
     { name: 'Generator', href: '/generator', icon: LayoutGrid },
     { name: 'Pembicara', href: '/speakers', icon: Users },
-    { name: 'User Management', shortName: 'Users', href: '/users', icon: ShieldCheck },
+    ...(isAdmin
+      ? [{ name: 'User Management', shortName: 'Users', href: '/users', icon: ShieldCheck }]
+      : []),
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
