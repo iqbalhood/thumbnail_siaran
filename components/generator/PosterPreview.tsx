@@ -213,9 +213,65 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
     },
   };
 
+  // Sejajar ke bawah (Vertikal / Column) layouts (foto di kiri, nama & jabatan di kanan) for 1080 x 1350 (4:5)
+  const columnSpeakerLayouts: Record<number, any> = {
+    1: rowSpeakerLayouts[1],
+    2: {
+      positions: [
+        { x: 180, y: 650, row: 0, colOffset: 0 },
+        { x: 180, y: 880, row: 1, colOffset: 0 },
+      ],
+      circleR: 95,
+      textWidth: 650,
+      fontSize: 28,
+      posFontSize: 18,
+    },
+    3: {
+      positions: [
+        { x: 175, y: 610, row: 0, colOffset: 0 },
+        { x: 175, y: 780, row: 1, colOffset: 0 },
+        { x: 175, y: 950, row: 2, colOffset: 0 },
+      ],
+      circleR: 75,
+      textWidth: 660,
+      fontSize: 24,
+      posFontSize: 16,
+    },
+    4: {
+      positions: [
+        { x: 165, y: 580, row: 0, colOffset: 0 },
+        { x: 165, y: 715, row: 1, colOffset: 0 },
+        { x: 165, y: 850, row: 2, colOffset: 0 },
+        { x: 165, y: 985, row: 3, colOffset: 0 },
+      ],
+      circleR: 60,
+      textWidth: 670,
+      fontSize: 21,
+      posFontSize: 14,
+    },
+    5: {
+      positions: [
+        { x: 160, y: 565, row: 0, colOffset: 0 },
+        { x: 160, y: 675, row: 1, colOffset: 0 },
+        { x: 160, y: 785, row: 2, colOffset: 0 },
+        { x: 160, y: 895, row: 3, colOffset: 0 },
+        { x: 160, y: 1005, row: 4, colOffset: 0 },
+      ],
+      circleR: 48,
+      textWidth: 680,
+      fontSize: 18,
+      posFontSize: 12,
+    },
+  };
+
   const count = Math.min(Math.max(speakers.length, 1), 5);
+  const isColumnLayout = count > 1 && speakerLayoutMode === 'column';
   const isGridLayout = count > 2 && speakerLayoutMode === 'grid';
-  const layout = isGridLayout ? gridSpeakerLayouts[count] : rowSpeakerLayouts[count];
+  const layout = isColumnLayout
+    ? columnSpeakerLayouts[count]
+    : isGridLayout
+    ? gridSpeakerLayouts[count]
+    : rowSpeakerLayouts[count];
 
   return (
     <div className="w-full max-w-[480px] mx-auto aspect-[4/5] bg-slate-200 rounded-2xl overflow-hidden shadow-2xl border border-slate-300 relative group">
@@ -358,19 +414,24 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
           speakers.slice(0, 5).map((speaker, i) => {
             const pos = layout.positions[i];
             const r = layout.circleR;
+            const isSideText = count === 1 || isColumnLayout;
 
             const xOffset = (pos.colOffset ?? 0) * speakerSpacingOffset;
-            const yRowOffset = isGridLayout && pos.row === 1 ? speakerRowSpacingOffset : 0;
+            const yRowOffset = isColumnLayout
+              ? (pos.row ?? i) * speakerRowSpacingOffset
+              : isGridLayout && pos.row === 1
+              ? speakerRowSpacingOffset
+              : 0;
 
             const currentX = pos.x + speakerXOffset + xOffset;
             const currentY = pos.y + speakerYOffset + yRowOffset;
-            const textX = (count === 1 ? currentX + r + 35 : currentX) + speakerTextOffset;
-            const nameY = (count === 1 ? currentY - 6 : currentY + r + 28) + speakerTextYOffset;
+            const textX = (isSideText ? currentX + r + 30 : currentX) + speakerTextOffset;
+            const nameY = (isSideText ? currentY - (layout.fontSize * 0.25) : currentY + r + 28) + speakerTextYOffset;
             const posY =
-              (count === 1
-                ? currentY + 36
+              (isSideText
+                ? currentY + (layout.fontSize * 0.9)
                 : currentY + r + 28 + layout.fontSize * 1.2) + speakerTextYOffset;
-            const anchor = count === 1 ? 'start' : 'middle';
+            const anchor = isSideText ? 'start' : 'middle';
 
             return (
               <g key={i}>
@@ -428,7 +489,7 @@ export function PosterPreview({ data, id = 'poster-svg' }: PosterPreviewProps) {
                   fontWeight="500"
                   textAnchor={anchor}
                 >
-                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, count === 1 ? 4 : 3).map((line, li) => (
+                  {wrapText(speaker.position.toUpperCase(), Math.floor(layout.textWidth / (layout.posFontSize * 0.55))).slice(0, isSideText ? 4 : 3).map((line, li) => (
                     <tspan
                       key={li}
                       x={textX}

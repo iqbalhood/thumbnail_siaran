@@ -60,7 +60,7 @@ export interface ThumbnailData {
   speakerYOffset?: number;
   speakerTextOffset?: number;
   speakerTextYOffset?: number;
-  speakerLayoutMode?: 'row' | 'grid';
+  speakerLayoutMode?: 'row' | 'grid' | 'column';
   speakerRowSpacingOffset?: number;
   eventInfoYOffset?: number;
   eventInfoXSpacing?: number;
