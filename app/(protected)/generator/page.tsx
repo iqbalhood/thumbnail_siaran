@@ -966,13 +966,13 @@ export default function GeneratorPage() {
     try {
       const isPoster = format === 'poster';
       const prefix = isPoster ? 'poster' : 'thumbnail';
-      const resSuffix = isPoster ? '1080x1350' : '1280x720';
+      const resSuffix = isPoster ? '2160x2700-HD' : '2560x1440-HD';
       const svgId = isPoster ? 'poster-svg' : 'thumbnail-svg';
       const width = isPoster ? 1080 : 1280;
       const height = isPoster ? 1350 : 720;
       const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 30);
       const fileName = `${prefix}-${cleanTitle}-${resSuffix}-${Date.now()}`;
-      await exportToPng(svgId, fileName, width, height);
+      await exportToPng(svgId, fileName, width, height, 2);
     } catch (error: any) {
       alert(`Gagal download: ${error.message}`);
     } finally {
@@ -985,9 +985,9 @@ export default function GeneratorPage() {
     try {
       const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 30);
       const timestamp = Date.now();
-      await exportToPng('thumbnail-svg', `thumbnail-${cleanTitle}-1280x720-${timestamp}`, 1280, 720);
+      await exportToPng('thumbnail-svg', `thumbnail-${cleanTitle}-2560x1440-HD-${timestamp}`, 1280, 720, 2);
       await new Promise((r) => setTimeout(r, 450));
-      await exportToPng('poster-svg', `poster-${cleanTitle}-1080x1350-${timestamp}`, 1080, 1350);
+      await exportToPng('poster-svg', `poster-${cleanTitle}-2160x2700-HD-${timestamp}`, 1080, 1350, 2);
     } catch (error: any) {
       alert(`Gagal download kedua format: ${error.message}`);
     } finally {
@@ -3185,7 +3185,7 @@ export default function GeneratorPage() {
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                       Thumbnail YouTube (16:9)
                     </h3>
-                    <p className="text-[10px] font-medium text-slate-400">Resolusi 1280 × 720 px</p>
+                    <p className="text-[10px] font-medium text-slate-400">Resolusi HD 2560 × 1440 px</p>
                   </div>
                 </div>
 
@@ -3260,7 +3260,7 @@ export default function GeneratorPage() {
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                       Poster Siaran (4:5)
                     </h3>
-                    <p className="text-[10px] font-medium text-slate-400">Resolusi 1080 × 1350 px</p>
+                    <p className="text-[10px] font-medium text-slate-400">Resolusi HD 2160 × 2700 px</p>
                   </div>
                 </div>
 
